@@ -12,10 +12,9 @@ public class ApiConstants {
 	public static final String V1 = "/v1";
 
 	// paths
-
 	// ESController
+	public static final String PING = "/ping";
 	public static final String SERVICES = "/services";
-	public static final String getHello = "/getHello";
 	public static final String DATA = "/data";
 	public static final String BULK_UPLOAD = "/bulk-upload";
 	public static final String BULK_UPDATE = "/bulk-update";
