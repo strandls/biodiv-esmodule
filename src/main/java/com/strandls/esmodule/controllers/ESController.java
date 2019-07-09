@@ -58,6 +58,13 @@ public class ESController {
 	@Inject
 	public ElasticSearchDownloadService elasticSearchDownloadService;
 
+	@GET
+	@Path(ApiConstants.PING)
+	@Produces(MediaType.TEXT_PLAIN)
+	public String ping() {
+		return "PONG";
+	}
+
 	@POST
 	@Path(ApiConstants.DATA + "/{index}/{type}/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)

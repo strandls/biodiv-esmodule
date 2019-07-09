@@ -14,36 +14,35 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.services.ElasticSearchGeoService;
 
 /**
  * Controller for geo related query services
+ * 
  * @author mukund
  *
  */
-@Path("geo")
+@Path(ApiConstants.V1 + ApiConstants.GEO)
 public class GeoController {
 
 	@Inject
 	ElasticSearchGeoService service;
-	
+
 	@GET
-	@Path("/within/{index}/{type}")
+	@Path(ApiConstants.WITHIN + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public MapResponse within(@PathParam("index") String index,
-			@PathParam("type") String type,
-			@QueryParam("geoField") String geoField,
-			@QueryParam("top") double top,
-			@QueryParam("left") double left,
-			@QueryParam("bottom") double bottom,
-			@QueryParam("right") double right) {
-		
+	public MapResponse within(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("geoField") String geoField, @QueryParam("top") double top, @QueryParam("left") double left,
+			@QueryParam("bottom") double bottom, @QueryParam("right") double right) {
+
 		try {
 			return service.getGeoWithinDocuments(index, type, geoField, top, left, bottom, right);
 		} catch (IOException e) {
-			throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 }
