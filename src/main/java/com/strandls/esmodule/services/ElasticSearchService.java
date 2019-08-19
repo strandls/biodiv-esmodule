@@ -9,6 +9,7 @@ import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
+import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -268,4 +269,17 @@ public interface ElasticSearchService {
 	 * 		{@link AggregationResponse}
 	 */
 	AggregationResponse aggregation(String index,String type,MapSearchQuery serachQuery,String geoAggregationField,String filter) throws IOException;
+	
+	/**
+	 * 
+	 *@param index
+	 *  	the index in which to search
+	 * @param type
+	 * 		the type in which to search
+	 * @param speciesName
+	 * 		the name of SpeciesName
+	 * @return
+	 * 		{@link ObservationInfo}
+	 */
+	ObservationInfo getObservationRightPan(String index,String type, String speciesName) throws IOException;
 }

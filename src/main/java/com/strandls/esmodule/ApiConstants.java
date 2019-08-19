@@ -27,6 +27,7 @@ public class ApiConstants {
 	public static final String DOWNLOAD = "/download";
 	public static final String MAPPING = "/mapping";
 	public static final String INDEX_ADMIN = "/index-admin";
+	public static final String RIGHTPAN = "/rightpan";
 
 	// binning Controller
 	public static final String BINNING = "/binning";

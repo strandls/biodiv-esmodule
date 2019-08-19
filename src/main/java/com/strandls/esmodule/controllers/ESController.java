@@ -32,6 +32,7 @@ import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
+import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -320,6 +321,16 @@ public class ESController {
 
 	}
 
+	@POST
+	@Path(ApiConstants.RIGHTPAN+"/{index}/{type}/{speciesName}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getObservationInfo(@PathParam("index") String index,@PathParam("type") String type,
+			@PathParam("speciesName") String speciesName) throws IOException {
+		ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, speciesName);
+		return Response.status(Status.OK).entity(info).build();
+	}
+	
 	@POST
 	@Path(ApiConstants.SEARCH + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)

@@ -172,6 +172,12 @@ public class ElasticSearchQueryUtil {
 				masterBoolQuery);
 		return masterBoolQuery;
 	}
+	
+	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
+		
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("maxvotedrecoid", maxVotedRecoId);
+		return masterBoolQueryBuilder;
+	}
 
 	protected GeoGridAggregationBuilder getGeoGridAggregationBuilder(String field, Integer precision) {
 		if (field == null)
