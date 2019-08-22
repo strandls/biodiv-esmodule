@@ -18,12 +18,19 @@ import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.services.ElasticSearchGeoService;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 /**
  * Controller for geo related query services
  * 
  * @author mukund
  *
  */
+
+@Api("Geo service")
 @Path(ApiConstants.V1 + ApiConstants.GEO)
 public class GeoController {
 
@@ -34,6 +41,11 @@ public class GeoController {
 	@Path(ApiConstants.WITHIN + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Witin", notes = "Returns Data", response = MapResponse.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
+			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	
 	public MapResponse within(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("top") double top, @QueryParam("left") double left,
 			@QueryParam("bottom") double bottom, @QueryParam("right") double right) {

@@ -1,6 +1,8 @@
 package com.strandls.esmodule;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.servlet.ServletContextEvent;
 
@@ -37,8 +39,12 @@ public class ESModuleServeletContextListener extends GuiceServletContextListener
 				ElasticSearchClient esClient = new ElasticSearchClient(
 						RestClient.builder(HttpHost.create(ESmoduleConfig.getString("es.url"))));
 				bind(ElasticSearchClient.class).toInstance(esClient);
+				
+				Map<String, String> props = new HashMap<String, String>();
+				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
+				props.put("jersey.config.server.wadl.disableWadl", "true");
 
-				serve("/*").with(GuiceContainer.class);
+				serve("/api/*").with(GuiceContainer.class,props);
 			}
 		}, new ESControllerModule(), new ESServiceImplModule(), new BinningModule());
 

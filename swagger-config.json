@@ -1,0 +1,14 @@
+{
+  "modelPackage": "com.strandls.esmodule.pojo",
+  "apiPackage": "com.strandls.esmodule.controllers",
+  "invokerPackage": "com.strandls.esmodule",
+  "groupId": "com.strandls.biodiv",
+  "artifactId": "esmodule-client",
+  "artifactVersion": "1.0.0-SNAPSHOT",
+  "fullJavaUtil": true,
+  "dateLibrary": "java8",
+  "library": "jersey1",
+  "developerName": "Abhishek Kumar Rudra",
+  "developerEmail": "abhishek.rudra@strandls.com",
+  "java8": true
+}
