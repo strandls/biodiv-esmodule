@@ -41,11 +41,10 @@ public class GeoController {
 	@Path(ApiConstants.WITHIN + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ApiOperation(value = "Witin", notes = "Returns Data", response = MapResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
 	public MapResponse within(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("top") double top, @QueryParam("left") double left,
 			@QueryParam("bottom") double bottom, @QueryParam("right") double right) {

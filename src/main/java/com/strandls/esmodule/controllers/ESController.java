@@ -77,8 +77,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Create Document", notes = "Returns succuess failure", response = MapQueryResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class),
-			@ApiResponse(code = 400, message = "Exception", response = String.class),
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Exception", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse create(@PathParam("index") String index, @PathParam("type") String type,
@@ -106,8 +105,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Fetch Document", notes = "Returns Document", response = MapDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapDocument.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapDocument fetch(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("documentId") String documentId) {
@@ -127,8 +125,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Update Document", notes = "Returns Success Failur", response = MapQueryResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse update(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("documentId") String documentId, Map<String, Object> document) {
@@ -147,8 +144,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Delete Document", notes = "Returns Success Failure", response = MapQueryResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse delete(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("documentId") String documentId) {
@@ -169,9 +165,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Bulk Upload Create Document", notes = "Returns Success Failure", response = MapQueryResponse.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class, responseContainer = "List"),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public List<MapQueryResponse> bulkUpload(@PathParam("index") String index, @PathParam("type") String type,
 			String jsonArray) {
@@ -191,9 +185,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Bulk Upload Update Document", notes = "Returns Success Failure", response = MapQueryResponse.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class, responseContainer = "List"),
-			@ApiResponse(code = 400, message = "No Documents to update", response = String.class),
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "No Documents to update", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public List<MapQueryResponse> bulkUpdate(@PathParam("index") String index, @PathParam("type") String type,
@@ -223,8 +215,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Search a Document", notes = "Returns Document", response = MapResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
-			@ApiResponse(code = 400, message = "key or value not specified", response = String.class),
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "key or value not specified", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapResponse search(@PathParam("index") String index, @PathParam("type") String type,
@@ -252,8 +243,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Bool Search a Document", notes = "Returns Document", response = MapResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapResponse boolSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
@@ -277,8 +267,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Range Search a Document", notes = "Returns Document", response = MapResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapResponse rangeSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
@@ -301,8 +290,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Geo Hash Aggregation", notes = "Returns Document", response = MapDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapDocument.class),
-			@ApiResponse(code = 400, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "ERROR", response = String.class) })
 
 	public MapDocument geohashAggregation(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoAggregationField") String field, @QueryParam("geoAggegationPrecision") Integer precision) {
@@ -328,7 +316,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Terms Aggregation", notes = "Returns Document", response = MapDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapDocument.class),
+	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "Incomplete map bounds request", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
@@ -365,7 +353,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Aggregation for List Page", notes = "Returns Aggregated values", response = AggregationResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = AggregationResponse.class),
+	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "Location field not specified for bounds", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
@@ -399,8 +387,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Aggregation for List Page", notes = "Returns Aggregated values", response = ObservationInfo.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = ObservationInfo.class),
-			@ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("speciesName") String speciesName) throws IOException {
@@ -418,8 +405,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Search for List Page", notes = "Returns List of Document", response = MapResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapResponse.class),
-			@ApiResponse(code = 400, message = "Inappropriate Bounds Data", response = String.class),
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Bounds Data", response = String.class),
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapResponse search(@PathParam("index") String index, @PathParam("type") String type,
@@ -458,8 +444,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Download of Document", notes = "Returns path of Document", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = String.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public String download(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("filePath") String filePath,
@@ -480,8 +465,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = MapDocument.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapDocument.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapDocument getMapping(@PathParam("index") String index) {
 
@@ -500,8 +484,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Post Mapping of Document", notes = "Returns Success Failure", response = MapQueryResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse postMapping(@PathParam("index") String index, MapDocument mapping) {
 
@@ -521,8 +504,7 @@ public class ESController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Create Index", notes = "Returns Success Failure", response = MapQueryResponse.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = MapQueryResponse.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse createIndex(@PathParam("index") String index, @PathParam("type") String type) {
 

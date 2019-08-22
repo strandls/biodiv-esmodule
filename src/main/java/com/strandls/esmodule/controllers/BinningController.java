@@ -40,11 +40,10 @@ public class BinningController {
 	@POST
 	@Path(ApiConstants.SQUARE + "/{index}/{type}")
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ApiOperation(value = "Binning", notes = "Returns Data", response = GeojsonData.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = GeojsonData.class),
-			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
 	public GeojsonData bin(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("cellSideKm") Double cellSideKm, MapBounds bounds) {
 
