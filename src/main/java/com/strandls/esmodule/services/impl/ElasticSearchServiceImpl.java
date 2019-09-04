@@ -2,6 +2,7 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,7 @@ import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationMapInfo;
+import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -613,7 +615,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchRequest request = new SearchRequest(index);
 		request.types(type);
 		request.source(sourceBuilder);
-		// System.out.println(request);
 		SearchResponse response = client.search(request);
 
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
@@ -649,7 +650,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.query(masterBoolQuery);
 		sourceBuilder.aggregation(aggregation);
 		sourceBuilder.size(1000);
-		String[] includes = { "id", "reprimageid", "latitude", "longitude" };
+		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -663,10 +664,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		for (SearchHit hit : response.getHits().getHits()) {
 
-			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("id").toString()),Double.parseDouble(hit.getSourceAsMap().get("latitude").toString()),
+			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					Double.parseDouble(hit.getSourceAsMap().get("latitude").toString()),
 					Double.parseDouble(hit.getSourceAsMap().get("longitude").toString())));
 			similarObservation.add(new SimilarObservation(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
-					String.valueOf(hit.getSourceAsMap().get("reprimageid"))));
+					String.valueOf(hit.getSourceAsMap().get("thumbnail"))));
 		}
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 		Terms frommonth = response.getAggregations().get("frommonth");
@@ -675,6 +677,58 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		return new ObservationInfo(groupMonth, similarObservation, latlon);
+	}
+
+	@Override
+	public List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException {
+
+		BoolQueryBuilder geoDistanceQuery = getGeoDistance(lat, Lon);
+
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(geoDistanceQuery);
+		sourceBuilder.size(1000);
+		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
+		sourceBuilder.fetchSource(includes, null);
+
+		SearchRequest request = new SearchRequest(index);
+		request.types(type);
+		request.source(sourceBuilder);
+
+		SearchResponse response = client.search(request);
+
+		List<ObservationNearBy> nearBy = new ArrayList<ObservationNearBy>();
+
+		Double distance = 0.0, lat2 = 0.0, lon2 = 0.0;
+		for (SearchHit hit : response.getHits().getHits()) {
+
+			lat2 = Double.parseDouble(hit.getSourceAsMap().get("latitude").toString());
+			lon2 = Double.parseDouble(hit.getSourceAsMap().get("longitude").toString());
+			distance = distanceCalculate(lat, Lon, lat2, lon2);
+
+			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("thumbnail")), distance));
+
+		}
+
+		Collections.sort(nearBy, (obv1, obv2) -> obv1.getDistance().compareTo(obv2.getDistance()));
+
+		return nearBy;
+	}
+
+	public Double distanceCalculate(Double lat1, Double lon1, Double lat2, Double lon2) {
+		Double dist = 0.0;
+		if ((lat1 == lat2) && (lon1 == lon2)) {
+			return dist;
+		} else {
+			double theta = lon1 - lon2;
+			dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2))
+					+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+			dist = Math.acos(dist);
+			dist = Math.toDegrees(dist);
+			dist = dist * 60 * 1.1515; // distance in miles
+			dist = dist * 1.609344; // distnace in KM
+		}
+		return (dist);
 	}
 
 }

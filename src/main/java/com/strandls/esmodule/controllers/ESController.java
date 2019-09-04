@@ -33,6 +33,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -394,6 +395,23 @@ public class ESController {
 		try {
 			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, speciesName);
 			return Response.status(Status.OK).entity(info).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
+	@POST
+	@Path(ApiConstants.NEARBY + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getNearByObservation(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("lat") String lat, @QueryParam("lon") String lon) {
+		try {
+			Double latitude = Double.parseDouble(lat);
+			Double longitude = Double.parseDouble(lon);
+			List<ObservationNearBy> result = elasticSearchService.observationNearBy(index, type, latitude, longitude);
+
+			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
