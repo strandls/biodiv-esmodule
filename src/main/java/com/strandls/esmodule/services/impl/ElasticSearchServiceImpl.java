@@ -686,7 +686,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.query(geoDistanceQuery);
-		sourceBuilder.size(1000);
+		sourceBuilder.size(30);
 		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
 		sourceBuilder.fetchSource(includes, null);
 
