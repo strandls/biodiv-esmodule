@@ -5,6 +5,7 @@ package com.strandls.esmodule;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.ws.rs.core.Application;
@@ -30,43 +32,50 @@ import io.swagger.jaxrs.config.BeanConfig;
  *
  */
 public class ApplicationConfig extends Application {
-	
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(ApplicationConfig.class);
-	
+
 	/**
 	 * 
 	 */
 	public ApplicationConfig() {
+		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
+
+		Properties properties = new Properties();
+		try {
+			properties.load(in);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		BeanConfig beanConfig = new BeanConfig();
-		beanConfig.setVersion("1.0");
-		beanConfig.setTitle("ES Module MicroServices");
-		beanConfig.setSchemes(new String[] { "http" });
-		beanConfig.setHost("localhost:8080");
-		beanConfig.setBasePath("/esmodule/api");
-		beanConfig.setResourcePackage("com.strandls.esmodule");
-		beanConfig.setScan(true);
-		beanConfig.setPrettyPrint(true);
+		beanConfig.setVersion(properties.getProperty("version"));
+		beanConfig.setTitle(properties.getProperty("title"));
+		beanConfig.setSchemes(properties.getProperty("schemes").split(","));
+		beanConfig.setHost(properties.getProperty("host"));
+		beanConfig.setBasePath(properties.getProperty("basePath"));
+		beanConfig.setResourcePackage(properties.getProperty("resourcePackage"));
+		beanConfig.setPrettyPrint(new Boolean(properties.getProperty("prettyPrint")));
+		beanConfig.setScan(new Boolean(properties.getProperty("scan")));
 	}
 
-	
 	@Override
 	public Set<Class<?>> getClasses() {
 		Set<Class<?>> resource = new HashSet<Class<?>>();
-		
+
 		try {
 			List<Class<?>> swaggerClass = getSwaggerAnnotationClassesFromPackage("com");
 			resource.addAll(swaggerClass);
 		} catch (ClassNotFoundException | URISyntaxException | IOException e) {
 			logger.error(e.getMessage());
 		}
-		
+
 		resource.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
 		resource.add(io.swagger.jaxrs.listing.ApiListingResource.class);
 
 		return resource;
 	}
-	
+
 	protected List<Class<?>> getSwaggerAnnotationClassesFromPackage(String packageName)
 			throws URISyntaxException, IOException, ClassNotFoundException {
 

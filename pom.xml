@@ -22,9 +22,9 @@
 		<openapi-generator-cli.version>4.0.3</openapi-generator-cli.version>
 
 		<!-- Project property -->
-		<war-name>esmodule</war-name>
+		<war-name>esmodule-api</war-name>
 		<srcDir>src/main/webapp</srcDir>
-		<base-path>/esmodule/api</base-path>
+		<base-path>/esmodule-api/api</base-path>
 		<location>com.strandls.esmodule</location>
 	</properties>
 
