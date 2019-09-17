@@ -10,12 +10,25 @@
 export ARTIFACTORY_USERNAME=admin
 export ARTIFACTORY_PASSWORD=password
 export ARTIFACTORY_URL=http://venus.strandls.com/artifactory
+
+# Naksha Specific
+export MTPROP_GEOSERVER.URL="http://localhost:8080/geoserver/"
+export MTPROP_GEOSERVER.WEB.USERNAME="admin"
+export MTPROP_GEOSERVER.WEB.PASSWORD="geoserver"
+export MTPROP_GEOSERVER.DBUSER="postgres"
+export MTPROP_DB.USERNAME="postgres"
+export MTPROP_DB.PASSWORD="postgres123"
+export MTPROP_TMPDIR.PATH="/app/data/geoserver/tmp/"
+export MTPROP_TMPDIRGEOSERVERPATH="/app/data/geoserver/data"
+export MTPROP_NAMESPACE.ID="NamespaceInfoImpl--21489445:78545345680:-7ffe"
+export MTPROP_DATASTORE.ID="DataStoreInfoImpl--21483454:136743037af:-7ffg"
 ```
 
 ### Build commands
 
 ```sh
 ./@ci/maven-toolbox configure-m2
+./@ci/maven-toolbox configure-properties src/main/resources/config.properties
 mvn clean install
 ./@ci/maven-toolbox configure-sdk
 ```
