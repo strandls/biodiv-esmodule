@@ -27,10 +27,8 @@ export MTPROP_DATASTORE.ID="DataStoreInfoImpl--21483454:136743037af:-7ffg"
 ### Build commands
 
 ```sh
-./@ci/maven-toolbox configure-m2
-./@ci/maven-toolbox configure-properties src/main/resources/config.properties
-mvn clean install
-./@ci/maven-toolbox configure-sdk
+sh ./@ci/install-maven-toolbox.sh
+sh ./@ci/build-and-deploy.sh
 ```
 
 ### Maven Toolbox Documentation
