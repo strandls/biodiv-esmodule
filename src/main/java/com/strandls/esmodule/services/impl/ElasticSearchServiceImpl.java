@@ -2,6 +2,7 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -52,6 +54,10 @@ import com.strandls.esmodule.models.MapQueryStatus;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
+import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationMapInfo;
+import com.strandls.esmodule.models.ObservationNearBy;
+import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -441,39 +447,38 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public AggregationResponse aggregation(String index, String type, MapSearchQuery searchQuery,String geoAggregationField,String filter) throws IOException {
+	public AggregationResponse aggregation(String index, String type, MapSearchQuery searchQuery,
+			String geoAggregationField, String filter) throws IOException {
 
 		logger.info("SEARCH for index: {}, type: {}", index, type);
 
 		MapSearchParams searchParams = searchQuery.getSearchParams();
 		BoolQueryBuilder masterBoolQuery = getBoolQueryBuilder(searchQuery);
-		
-		//logger.info(masterBoolQuery.toString());
-		
-		
-		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
-		
-		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
-		AggregationResponse aggregationResponse = new AggregationResponse() ;
 
-		if(filter.equals("name") || filter.equals("status")) {
-			AggregationResponse temp=null;
+		// logger.info(masterBoolQuery.toString());
+
+		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
+
+		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+		AggregationResponse aggregationResponse = new AggregationResponse();
+
+		if (filter.equals("name") || filter.equals("status")) {
+			AggregationResponse temp = null;
 			aggregation = AggregationBuilders.filter("available", QueryBuilders.existsQuery(filter));
-			temp = groupAggregation(index, type, aggregation, masterBoolQuery,filter);
+			temp = groupAggregation(index, type, aggregation, masterBoolQuery, filter);
 			HashMap<Object, Long> t = new HashMap<Object, Long>();
 			for (Map.Entry<Object, Long> entry : temp.getGroupAggregation().entrySet()) {
 				t.put(entry.getKey(), entry.getValue());
 			}
 			aggregation = AggregationBuilders.missing("miss").field(filter.concat(".keyword"));
-			temp = groupAggregation(index, type, aggregation, masterBoolQuery,filter);
+			temp = groupAggregation(index, type, aggregation, masterBoolQuery, filter);
 			for (Map.Entry<Object, Long> entry : temp.getGroupAggregation().entrySet()) {
 				t.put(entry.getKey(), entry.getValue());
 			}
 			aggregationResponse.setGroupAggregation(t);
-		}
-		else {
-			aggregationResponse = groupAggregation(index, type, aggregation, masterBoolQuery,filter);
-			
+		} else {
+			aggregationResponse = groupAggregation(index, type, aggregation, masterBoolQuery, filter);
+
 		}
 		return aggregationResponse;
 	}
@@ -504,8 +509,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			geohashAggregation = aggregateSearch.getDocument().toString();
 
 		String termsAggregation = null;
-		if(termsAggregationField != null) {
-			termsAggregation = termsAggregation(index, type, termsAggregationField, null, null, geoAggregationField, searchQuery).getDocument().toString();
+		if (termsAggregationField != null) {
+			termsAggregation = termsAggregation(index, type, termsAggregationField, null, null, geoAggregationField,
+					searchQuery).getDocument().toString();
 		}
 
 		if (onlyFilteredAggregation != null && onlyFilteredAggregation) {
@@ -605,27 +611,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		if (query != null)
 			sourceBuilder.query(query);
 		sourceBuilder.aggregation(aggQuery);
-		
-		
 
 		SearchRequest request = new SearchRequest(index);
 		request.types(type);
 		request.source(sourceBuilder);
-		//System.out.println(request);
 		SearchResponse response = client.search(request);
 
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
 		if (filter.equals("name") || filter.equals("status")) {
 			Filter filterAgg = response.getAggregations().get("available");
-			if(filterAgg != null) {
-				groupMonth.put("available",  filterAgg.getDocCount());				
+			if (filterAgg != null) {
+				groupMonth.put("available", filterAgg.getDocCount());
 			}
 			Missing missingAgg = response.getAggregations().get("miss");
-			if(missingAgg!= null) {
-				groupMonth.put("missing",missingAgg.getDocCount());
+			if (missingAgg != null) {
+				groupMonth.put("missing", missingAgg.getDocCount());
 			}
-			
+
 		} else {
 			Terms frommonth = response.getAggregations().get(filter);
 
@@ -633,8 +636,99 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				groupMonth.put(entry.getKey(), entry.getDocCount());
 			}
 		}
-		
+
 		return new AggregationResponse(groupMonth);
+	}
+
+	@Override
+	public ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException {
+
+		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(speciesName);
+		AggregationBuilder aggregation = AggregationBuilders.terms("frommonth").field("frommonth").size(1000);
+
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(masterBoolQuery);
+		sourceBuilder.aggregation(aggregation);
+		sourceBuilder.size(1000);
+		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
+		sourceBuilder.fetchSource(includes, null);
+
+		SearchRequest request = new SearchRequest(index);
+		request.types(type);
+		request.source(sourceBuilder);
+
+		SearchResponse response = client.search(request);
+
+		List<SimilarObservation> similarObservation = new ArrayList<SimilarObservation>();
+		List<ObservationMapInfo> latlon = new ArrayList<ObservationMapInfo>();
+
+		for (SearchHit hit : response.getHits().getHits()) {
+
+			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					Double.parseDouble(hit.getSourceAsMap().get("latitude").toString()),
+					Double.parseDouble(hit.getSourceAsMap().get("longitude").toString())));
+			similarObservation.add(new SimilarObservation(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("thumbnail"))));
+		}
+		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
+		Terms frommonth = response.getAggregations().get("frommonth");
+		for (Terms.Bucket entry : frommonth.getBuckets()) {
+			groupMonth.put(entry.getKey(), entry.getDocCount());
+		}
+
+		return new ObservationInfo(groupMonth, similarObservation, latlon);
+	}
+
+	@Override
+	public List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException {
+
+		BoolQueryBuilder geoDistanceQuery = getGeoDistance(lat, Lon);
+
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(geoDistanceQuery);
+		sourceBuilder.size(30);
+		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
+		sourceBuilder.fetchSource(includes, null);
+
+		SearchRequest request = new SearchRequest(index);
+		request.types(type);
+		request.source(sourceBuilder);
+
+		SearchResponse response = client.search(request);
+
+		List<ObservationNearBy> nearBy = new ArrayList<ObservationNearBy>();
+
+		Double distance = 0.0, lat2 = 0.0, lon2 = 0.0;
+		for (SearchHit hit : response.getHits().getHits()) {
+
+			lat2 = Double.parseDouble(hit.getSourceAsMap().get("latitude").toString());
+			lon2 = Double.parseDouble(hit.getSourceAsMap().get("longitude").toString());
+			distance = distanceCalculate(lat, Lon, lat2, lon2);
+
+			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("thumbnail")), distance));
+
+		}
+
+		Collections.sort(nearBy, (obv1, obv2) -> obv1.getDistance().compareTo(obv2.getDistance()));
+
+		return nearBy;
+	}
+
+	public Double distanceCalculate(Double lat1, Double lon1, Double lat2, Double lon2) {
+		Double dist = 0.0;
+		if ((lat1 == lat2) && (lon1 == lon2)) {
+			return dist;
+		} else {
+			double theta = lon1 - lon2;
+			dist = Math.sin(Math.toRadians(lat1)) * Math.sin(Math.toRadians(lat2))
+					+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.cos(Math.toRadians(theta));
+			dist = Math.acos(dist);
+			dist = Math.toDegrees(dist);
+			dist = dist * 60 * 1.1515; // distance in miles
+			dist = dist * 1.609344; // distnace in KM
+		}
+		return (dist);
 	}
 
 }

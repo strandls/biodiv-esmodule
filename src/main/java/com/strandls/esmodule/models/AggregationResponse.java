@@ -1,7 +1,6 @@
 package com.strandls.esmodule.models;
 
 import java.util.HashMap;
-import java.util.Map;
 
 public class AggregationResponse {
 
