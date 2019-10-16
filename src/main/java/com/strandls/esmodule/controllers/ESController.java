@@ -43,6 +43,7 @@ import com.strandls.esmodule.services.ElasticSearchService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
@@ -82,7 +83,7 @@ public class ESController {
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse create(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("documentId") String documentId, MapDocument document) {
+			@PathParam("documentId") String documentId, @ApiParam MapDocument document) {
 
 		String docString = String.valueOf(document.getDocument());
 		try {
@@ -129,7 +130,7 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public MapQueryResponse update(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("documentId") String documentId, Map<String, Object> document) {
+			@PathParam("documentId") String documentId, @ApiParam Map<String, Object> document) {
 
 		try {
 			return elasticSearchService.update(index, type, documentId, document);
@@ -169,7 +170,7 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public List<MapQueryResponse> bulkUpload(@PathParam("index") String index, @PathParam("type") String type,
-			String jsonArray) {
+			@ApiParam String jsonArray) {
 
 		try {
 			return elasticSearchService.bulkUpload(index, type, jsonArray);
@@ -190,7 +191,7 @@ public class ESController {
 			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public List<MapQueryResponse> bulkUpdate(@PathParam("index") String index, @PathParam("type") String type,
-			List<Map<String, Object>> updateDocs) {
+			@ApiParam List<Map<String, Object>> updateDocs) {
 
 		if (updateDocs == null)
 			throw new WebApplicationException(
@@ -222,7 +223,8 @@ public class ESController {
 	public MapResponse search(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("key") String key, @QueryParam("value") String value,
 			@QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, MapSearchParams searchParams) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@ApiParam MapSearchParams searchParams) {
 
 		if (key == null || value == null)
 			throw new WebApplicationException(
@@ -249,7 +251,7 @@ public class ESController {
 	public MapResponse boolSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, List<MapBoolQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam List<MapBoolQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -273,7 +275,7 @@ public class ESController {
 	public MapResponse rangeSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, List<MapRangeQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam List<MapRangeQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -323,7 +325,8 @@ public class ESController {
 
 	public MapDocument termsAggregation(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("subField") String subField,
-			@QueryParam("size") Integer size, @QueryParam("locationField") String locationField, MapSearchQuery query) {
+			@QueryParam("size") Integer size, @QueryParam("locationField") String locationField,
+			@ApiParam MapSearchQuery query) {
 
 		if (field == null)
 			throw new WebApplicationException(
@@ -360,7 +363,7 @@ public class ESController {
 
 	public AggregationResponse getAggregation(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("filter") String filter, @QueryParam("geoAggregationField") String geoAggregationField,
-			MapSearchQuery query) throws IOException {
+			@ApiParam MapSearchQuery query) throws IOException {
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
 		MapBounds bounds = null;
@@ -430,7 +433,7 @@ public class ESController {
 			@QueryParam("geoAggregationField") String geoAggregationField,
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
-			@QueryParam("termsAggregationField") String termsAggregationField, MapSearchQuery query) {
+			@QueryParam("termsAggregationField") String termsAggregationField, @ApiParam MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
@@ -466,7 +469,7 @@ public class ESController {
 
 	public String download(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("filePath") String filePath,
-			@QueryParam("fileType") String fileType, MapSearchQuery query) {
+			@QueryParam("fileType") String fileType, @ApiParam MapSearchQuery query) {
 		try {
 			return elasticSearchDownloadService.downloadSearch(index, type, query, geoField, filePath, fileType);
 		} catch (IOException e) {
@@ -504,7 +507,7 @@ public class ESController {
 	@ApiOperation(value = "Post Mapping of Document", notes = "Returns Success Failure", response = MapQueryResponse.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public MapQueryResponse postMapping(@PathParam("index") String index, MapDocument mapping) {
+	public MapQueryResponse postMapping(@PathParam("index") String index, @ApiParam MapDocument mapping) {
 
 		String docString = String.valueOf(mapping.getDocument());
 
