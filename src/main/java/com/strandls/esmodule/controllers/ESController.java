@@ -251,7 +251,8 @@ public class ESController {
 	public MapResponse boolSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam(name = "query") List<MapBoolQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@ApiParam(name = "query") List<MapBoolQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -275,7 +276,8 @@ public class ESController {
 	public MapResponse rangeSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam(name = "query") List<MapRangeQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@ApiParam(name = "query") List<MapRangeQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -407,6 +409,10 @@ public class ESController {
 	@Path(ApiConstants.NEARBY + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "NearBy Observation", notes = "Returns all the nearby Observation", response = ObservationNearBy.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
+
 	public Response getNearByObservation(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("lat") String lat, @QueryParam("lon") String lon) {
 		try {
@@ -433,7 +439,8 @@ public class ESController {
 			@QueryParam("geoAggregationField") String geoAggregationField,
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
-			@QueryParam("termsAggregationField") String termsAggregationField, @ApiParam(name = "query") MapSearchQuery query) {
+			@QueryParam("termsAggregationField") String termsAggregationField,
+			@ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
@@ -507,7 +514,8 @@ public class ESController {
 	@ApiOperation(value = "Post Mapping of Document", notes = "Returns Success Failure", response = MapQueryResponse.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public MapQueryResponse postMapping(@PathParam("index") String index, @ApiParam(name = "mapping") MapDocument mapping) {
+	public MapQueryResponse postMapping(@PathParam("index") String index,
+			@ApiParam(name = "mapping") MapDocument mapping) {
 
 		String docString = String.valueOf(mapping.getDocument());
 
