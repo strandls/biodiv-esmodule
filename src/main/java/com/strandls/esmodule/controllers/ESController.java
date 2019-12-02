@@ -388,7 +388,7 @@ public class ESController {
 	}
 
 	@POST
-	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{speciesName}")
+	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{maxVotedRecoId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -396,9 +396,9 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("speciesName") String speciesName) throws IOException {
+			@PathParam("maxVotedRecoId") String maxVotedRecoId) throws IOException {
 		try {
-			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, speciesName);
+			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, maxVotedRecoId);
 			return Response.status(Status.OK).entity(info).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();

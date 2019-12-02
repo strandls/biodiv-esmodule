@@ -641,9 +641,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException {
+	public ObservationInfo getObservationRightPan(String index, String type, String maxVotedRecoId) throws IOException {
 
-		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(speciesName);
+		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(maxVotedRecoId);
 		AggregationBuilder aggregation = AggregationBuilders.terms("frommonth").field("frommonth").size(1000);
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
