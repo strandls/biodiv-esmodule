@@ -395,7 +395,7 @@ public class ESController {
 	}
 
 	@POST
-	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{speciesName}")
+	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{maxVotedRecoId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -403,9 +403,9 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("speciesName") String speciesName) throws IOException {
+			@PathParam("maxVotedRecoId") String maxVotedRecoId) throws IOException {
 		try {
-			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, speciesName);
+			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, maxVotedRecoId);
 			return Response.status(Status.OK).entity(info).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
@@ -416,6 +416,10 @@ public class ESController {
 	@Path(ApiConstants.NEARBY + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "NearBy Observation", notes = "Returns all the nearby Observation", response = ObservationNearBy.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
+
 	public Response getNearByObservation(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("lat") String lat, @QueryParam("lon") String lon) {
 		try {
