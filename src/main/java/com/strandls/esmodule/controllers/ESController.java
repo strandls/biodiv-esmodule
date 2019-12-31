@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
+import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
@@ -40,6 +41,9 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
+import com.strandls.esmodule.utils.ElasticSearchConstants;
+import com.strandls.esmodule.utils.IndexMappingsConstants;
+import com.strandls.esmodule.utils.UtilityMethods;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -65,6 +69,9 @@ public class ESController {
 
 	@Inject
 	public ElasticSearchDownloadService elasticSearchDownloadService;
+
+	@Inject
+	public UtilityMethods utilityMethods;
 
 	@GET
 	@Path(ApiConstants.PING)
@@ -251,7 +258,8 @@ public class ESController {
 	public MapResponse boolSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam(name = "query") List<MapBoolQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@ApiParam(name = "query") List<MapBoolQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -275,7 +283,8 @@ public class ESController {
 	public MapResponse rangeSearch(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("from") Integer from, @QueryParam("limit") Integer limit, @QueryParam("sortOn") String sortOn,
 			@QueryParam("sortType") MapSortType sortType, @QueryParam("geoAggregationField") String geoAggregationField,
-			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision, @ApiParam(name = "query") List<MapRangeQuery> query) {
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@ApiParam(name = "query") List<MapRangeQuery> query) {
 
 		try {
 			MapSearchParams searchParams = new MapSearchParams(from, limit, sortOn, sortType);
@@ -433,7 +442,8 @@ public class ESController {
 			@QueryParam("geoAggregationField") String geoAggregationField,
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
-			@QueryParam("termsAggregationField") String termsAggregationField, @ApiParam(name = "query") MapSearchQuery query) {
+			@QueryParam("termsAggregationField") String termsAggregationField,
+			@ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
@@ -507,7 +517,8 @@ public class ESController {
 	@ApiOperation(value = "Post Mapping of Document", notes = "Returns Success Failure", response = MapQueryResponse.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public MapQueryResponse postMapping(@PathParam("index") String index, @ApiParam(name = "mapping") MapDocument mapping) {
+	public MapQueryResponse postMapping(@PathParam("index") String index,
+			@ApiParam(name = "mapping") MapDocument mapping) {
 
 		String docString = String.valueOf(mapping.getDocument());
 
@@ -521,7 +532,34 @@ public class ESController {
 	}
 
 	@POST
+	@Path(ApiConstants.ESMAPPING + "/{index}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Post Mapping of Document to ES", notes = "Returns Success Failure", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
+	public Response esPostMapping(@PathParam("index") String index) {
+		try {
+			MapQueryResponse response = null;
+			String indexName = ElasticSearchConstants.extended_taxon_definition.getValue();
+			if (indexName.equalsIgnoreCase(index)) {
+				String indexMapping = IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping();
+				response = elasticAdminSearchService
+						.esPostMapping(ElasticSearchConstants.extended_taxon_definition.name(), indexMapping);
+			}
+			return Response.status(Status.OK).entity(response.getMessage()).build();
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@POST
 	@Path(ApiConstants.INDEX_ADMIN + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Create Index", notes = "Returns Success Failure", response = MapQueryResponse.class)
@@ -535,6 +573,54 @@ public class ESController {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "AutoCompletion", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response autoCompletion(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("field") String field, @QueryParam("text") String fieldText,
+			@QueryParam("grouId") String filterField, @QueryParam("group") Integer filter) {
+
+		try {
+			List<ExtendedTaxonDefinition> records = null;
+			if (filter == null) {
+				records = elasticSearchService.autoCompletion(index, type, field, fieldText);
+				records = utilityMethods.rankDocument(records, filterField, fieldText);
+
+			} else {
+				records = elasticSearchService.autoCompletion(index, type, field, fieldText, filterField, filter);
+				records = utilityMethods.rankDocument(records, filterField, fieldText);
+			}
+			return Response.status(Status.OK).entity(records).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@GET
+	@Path(ApiConstants.matchPhrase + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response matchPhrase(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("field") String field, @QueryParam("text") String fieldText) {
+		try {
+			List<ExtendedTaxonDefinition> record = elasticSearchService.matchPhrase(index, type, field + ".raw",
+					fieldText);
+			return Response.status(Status.OK).entity(record).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
 		}
 	}
 

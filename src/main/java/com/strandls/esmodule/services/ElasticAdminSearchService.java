@@ -23,6 +23,21 @@ public interface ElasticAdminSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapQueryResponse postMapping(String index, String mapping) throws IOException;
+	
+	/**
+	 * Define a mapping for an index and type
+	 * 
+	 * @param index
+	 *            the index on which mapping needs to be defined
+	 * @param type
+	 * 			  elastic search accepts a single type per index           
+	 * @param mapping
+	 *            the mapping
+	 * @return {@link MapQueryResponse}
+	 * @throws IOException throws {@link IOException}
+	 */
+	
+	MapQueryResponse esPostMapping(String index,String mapping) throws IOException;
 
 	/**
 	 * Get the mapping for an index

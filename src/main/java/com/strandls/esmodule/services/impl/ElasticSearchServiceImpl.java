@@ -47,6 +47,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.strandls.es.ElasticSearchClient;
+import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -62,6 +63,7 @@ import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticSearchService;
+import com.strandls.esmodule.utils.ElasticSearchConstants;
 
 /**
  * Implementation of {@link ElasticSearchService}
@@ -73,6 +75,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Inject
 	private ElasticSearchClient client;
+
+	@Inject
+	private ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticSearchServiceImpl.class);
 
@@ -680,7 +685,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException {
+	public List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon)
+			throws IOException {
 
 		BoolQueryBuilder geoDistanceQuery = getGeoDistance(lat, Lon);
 
@@ -729,6 +735,120 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			dist = dist * 1.609344; // distnace in KM
 		}
 		return (dist);
+	}
+
+	@Override
+	public List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text) {
+		// the completion method works for the mapping where edgeNGram is used
+		logger.info("inside auto completion method");
+
+		if (index.equals(ElasticSearchConstants.extended_taxon_definition.getValue())
+				&& type.equals(ElasticSearchConstants.extended_records.getValue())) {
+			index = ElasticSearchConstants.extended_taxon_definition.name();
+			type = ElasticSearchConstants.extended_records.name();
+		}
+		if (field.equals("common_name")) {
+			field = "common_names.name";
+		} else if (field.equals("scientific_name")) {
+			field = "name";
+		}
+
+		List<ExtendedTaxonDefinition> matchedResults = new ArrayList<ExtendedTaxonDefinition>();
+		QueryBuilder query = QueryBuilders.matchQuery(field, text);
+		SearchRequest searchRequest = new SearchRequest(index);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.size(100);
+		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
+		SearchResponse searchResponse = null;
+		try {
+			searchSourceBuilder.query(query);
+			searchRequest.types(type);
+			searchRequest.source(searchSourceBuilder);
+			searchResponse = client.search(searchRequest);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		for (SearchHit hit : searchResponse.getHits().getHits()) {
+			try {
+				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), ExtendedTaxonDefinition.class));
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+				e.printStackTrace();
+			}
+
+		}
+		return matchedResults;
+	}
+
+	@Override
+	public List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text,
+			String filterField, Integer filter) {
+		List<ExtendedTaxonDefinition> matchedResults = new ArrayList<ExtendedTaxonDefinition>();
+		QueryBuilder query = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(field, text))
+				.filter(QueryBuilders.termQuery(filterField, filter));
+		SearchRequest searchRequest = new SearchRequest(index);
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.size(100);
+		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
+		SearchResponse searchResponse = null;
+		try {
+			searchSourceBuilder.query(query);
+			searchRequest.types(type);
+			searchRequest.source(searchSourceBuilder);
+			searchResponse = client.search(searchRequest);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+//		List<String> matchedResults = Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
+//				.map(Map::values).flatMap(Collection::stream).map(Object::toString).collect(Collectors.toList());
+		for (SearchHit hit : searchResponse.getHits().getHits()) {
+			try {
+				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), ExtendedTaxonDefinition.class));
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+				e.printStackTrace();
+			}
+		}
+		return matchedResults;
+	}
+
+	@Override
+	public List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String field, String text) {
+
+		if (index.equals(ElasticSearchConstants.extended_taxon_definition.getValue())
+				&& type.equals(ElasticSearchConstants.extended_records.getValue())) {
+			index = ElasticSearchConstants.extended_taxon_definition.name();
+			type = ElasticSearchConstants.extended_records.name();
+		}
+		List<ExtendedTaxonDefinition> matchedResults = new ArrayList<ExtendedTaxonDefinition>();
+
+		QueryBuilder query = QueryBuilders.matchPhraseQuery(field, text);
+		SearchRequest searchRequest = new SearchRequest(index);
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
+		SearchResponse searchResponse = null;
+		try {
+			searchSourceBuilder.query(query);
+			searchRequest.types(type);
+			searchRequest.source(searchSourceBuilder);
+			searchResponse = client.search(searchRequest);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+//		List<String> matchedResults = Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
+//				.map(Map::values).flatMap(Collection::stream).map(Object::toString).collect(Collectors.toList());
+		for (SearchHit hit : searchResponse.getHits().getHits()) {
+			try {
+				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), ExtendedTaxonDefinition.class));
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+				e.printStackTrace();
+			}
+		}
+		return matchedResults;
 	}
 
 }

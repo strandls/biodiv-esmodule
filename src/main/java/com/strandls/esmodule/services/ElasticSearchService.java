@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -218,4 +219,30 @@ public interface ElasticSearchService {
 	ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException;
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
+	
+//	MapQueryResponse autoSuggestor(String index, String type, String field, String text);
+	
+	/**
+	 * @param index : index to be searched upon
+	 * @param type : type within an index
+	 * @param field: field to be looked into
+	 * @param text :  text to be searched
+	 * @return
+	 */
+	List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter);
+	List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text);	
+	
+	/**
+	 * @param index
+	 * @param type
+	 * @param field
+	 * @param text
+	 * @return
+	 */
+	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String field, String text);
+	
+	//List<String> getAutoSuggestionSearch(String index, String type, String){
+		
+		
+	
 }
