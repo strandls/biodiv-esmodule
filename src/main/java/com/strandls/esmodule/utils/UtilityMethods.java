@@ -1,6 +1,7 @@
 package com.strandls.esmodule.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -11,7 +12,43 @@ import java.util.stream.Collectors;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 
 public class UtilityMethods {
-
+	
+	@SuppressWarnings("serial")
+	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
+		{
+			put("etdi", "extended_taxon_definition");
+			put("etags","extended_tags");
+		}
+	};
+	
+	@SuppressWarnings("serial")
+	private static final HashMap<String, String>esIndexTypeConstant = new HashMap<String, String>(){
+		{
+			put("er","extended_records");	
+		}
+	};
+	
+	public String getEsindexconstants(String index) {
+		return esIndexConstants.get(index);
+	}
+	
+	public String getEsindextypeconstant(String type) {
+		return esIndexTypeConstant.get(type);
+	}
+	
+	public List<String> getEsindexWithMapping(String index) {
+		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),
+				IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping()));
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public final Class getClass(String index) {
+		switch (index) {
+			case "etdi": return ExtendedTaxonDefinition.class;
+			default: return null;
+		}
+	}
+	
 	public final List<ExtendedTaxonDefinition> rankDocument(List<ExtendedTaxonDefinition> records, String field,
 			String fieldText) {
 		int listIndex = 0;

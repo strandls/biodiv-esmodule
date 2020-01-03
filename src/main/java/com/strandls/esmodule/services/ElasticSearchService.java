@@ -229,8 +229,8 @@ public interface ElasticSearchService {
 	 * @param text :  text to be searched
 	 * @return
 	 */
-	List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter);
-	List<ExtendedTaxonDefinition> autoCompletion(String index, String type, String field, String text);	
+	<T> List<T> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter,Class<T> classMapped);
+	<T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped);	
 	
 	/**
 	 * @param index
@@ -239,7 +239,7 @@ public interface ElasticSearchService {
 	 * @param text
 	 * @return
 	 */
-	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String field, String text);
+	ExtendedTaxonDefinition matchPhrase(String index, String type, String field, String text);
 	
 	//List<String> getAutoSuggestionSearch(String index, String type, String){
 		

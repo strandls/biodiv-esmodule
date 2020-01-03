@@ -2,7 +2,7 @@ package com.strandls.esmodule.indexes.pojo;
 
 import java.util.List;
 
-public class ExtendedTaxonDefinition {
+public class ExtendedTaxonDefinition implements ElasticIndexes {
 
 	private Integer parent_taxon_definition_id;
 	private String group_name;

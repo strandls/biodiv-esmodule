@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
+import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.MapBoundParams;
@@ -41,8 +42,6 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
-import com.strandls.esmodule.utils.ElasticSearchConstants;
-import com.strandls.esmodule.utils.IndexMappingsConstants;
 import com.strandls.esmodule.utils.UtilityMethods;
 
 import io.swagger.annotations.Api;
@@ -546,14 +545,10 @@ public class ESController {
 	public Response esPostMapping(@PathParam("index") String index) {
 		try {
 			MapQueryResponse response = null;
-			String indexName = ElasticSearchConstants.extended_taxon_definition.getValue();
-			if (indexName.equalsIgnoreCase(index)) {
-				String indexMapping = IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping();
-				response = elasticAdminSearchService
-						.esPostMapping(ElasticSearchConstants.extended_taxon_definition.name(), indexMapping);
-			}
+			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
+			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
 			return Response.status(Status.OK).entity(response.getMessage()).build();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -573,33 +568,38 @@ public class ESController {
 
 		try {
 			return elasticAdminSearchService.createIndex(index, type);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@GET
 	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "AutoCompletion", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class, responseContainer = "List")
+	@ApiOperation(value = "AutoCompletion", notes = "Returns Success Failure", response = ElasticIndexes.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response autoCompletion(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("text") String fieldText,
 			@QueryParam("grouId") String filterField, @QueryParam("group") Integer filter) {
-
+		
+		
+		String elasticIndex= utilityMethods.getEsindexconstants(index);
+		String elasticType = utilityMethods.getEsindextypeconstant(type);
+		
 		try {
-			List<ExtendedTaxonDefinition> records = null;
+			List<? extends ElasticIndexes> records = null;
 			if (filter == null) {
-				records = elasticSearchService.autoCompletion(index, type, field, fieldText);
-				records = utilityMethods.rankDocument(records, filterField, fieldText);
-
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, utilityMethods.getClass(index));
 			} else {
-				records = elasticSearchService.autoCompletion(index, type, field, fieldText, filterField, filter);
-				records = utilityMethods.rankDocument(records, filterField, fieldText);
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField, filter, utilityMethods.getClass(index));
+			}
+			if(index.equals("etdi")) {
+				records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, filterField, fieldText);
 			}
 			return Response.status(Status.OK).entity(records).build();
 		} catch (Exception e) {
@@ -614,12 +614,16 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class, responseContainer = "List")
+	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ElasticIndexes.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response matchPhrase(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("text") String fieldText) {
+		
+		index= utilityMethods.getEsindexconstants(index);
+		type = utilityMethods.getEsindextypeconstant(type);
+		
 		try {
-			List<ExtendedTaxonDefinition> record = elasticSearchService.matchPhrase(index, type, field + ".raw",
+			ExtendedTaxonDefinition record = elasticSearchService.matchPhrase(index, type, field,
 					fieldText);
 			return Response.status(Status.OK).entity(record).build();
 		} catch (Exception e) {
