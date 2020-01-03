@@ -614,7 +614,7 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ElasticIndexes.class)
+	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response matchPhrase(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("text") String fieldText) {
