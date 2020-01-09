@@ -654,7 +654,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.query(masterBoolQuery);
 		sourceBuilder.aggregation(aggregation);
 		sourceBuilder.size(1000);
-		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
+		String[] includes = { "id", "thumbnail", "name", "latitude", "longitude" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -669,9 +669,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		for (SearchHit hit : response.getHits().getHits()) {
 
 			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("name")),
 					Double.parseDouble(hit.getSourceAsMap().get("latitude").toString()),
 					Double.parseDouble(hit.getSourceAsMap().get("longitude").toString())));
 			similarObservation.add(new SimilarObservation(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("name")),
 					String.valueOf(hit.getSourceAsMap().get("thumbnail"))));
 		}
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
@@ -691,8 +693,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.query(geoDistanceQuery);
-		sourceBuilder.size(30);
-		String[] includes = { "id", "thumbnail", "latitude", "longitude" };
+		sourceBuilder.size(15);
+		String[] includes = { "id", "thumbnail", "name", "latitude", "longitude" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -711,6 +713,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			distance = distanceCalculate(lat, Lon, lat2, lon2);
 
 			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+					String.valueOf(hit.getSourceAsMap().get("name")),
 					String.valueOf(hit.getSourceAsMap().get("thumbnail")), distance));
 
 		}
@@ -737,10 +740,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public <T> List<T> autoCompletion(String index, String type, String field, String text, Class<T>classMapped) {
+	public <T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped) {
 		// the completion method works for the mapping where edgeNGram is used
 		logger.info("inside auto completion method");
-		
+
 		if (field.equals("common_name")) {
 			field = "common_names.name";
 		} else if (field.equals("scientific_name")) {
@@ -776,9 +779,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public <T> List<T> autoCompletion(String index, String type, String field, String text,
-			String filterField, Integer filter, Class<T> classMapped) {
-		
+	public <T> List<T> autoCompletion(String index, String type, String field, String text, String filterField,
+			Integer filter, Class<T> classMapped) {
+
 		if (field.equals("common_name")) {
 			field = "common_names.name";
 		} else if (field.equals("scientific_name")) {
@@ -842,7 +845,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				logger.error(e.getMessage());
 			}
 		}
-		if(matchedResults.size()==0)
+		if (matchedResults.size() == 0)
 			return null;
 		return matchedResults.get(0);
 	}
