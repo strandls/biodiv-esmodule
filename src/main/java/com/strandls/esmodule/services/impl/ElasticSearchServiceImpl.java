@@ -767,7 +767,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		for (SearchHit hit : searchResponse.getHits().getHits()) {
 			try {
 				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), classMapped));
-			} catch (IOException e) {
+			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
 
@@ -842,6 +842,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				logger.error(e.getMessage());
 			}
 		}
+		if(matchedResults.size()==0)
+			return null;
 		return matchedResults.get(0);
 	}
 
