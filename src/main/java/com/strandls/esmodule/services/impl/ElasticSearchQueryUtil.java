@@ -185,7 +185,7 @@ public class ElasticSearchQueryUtil {
 	public BoolQueryBuilder getGeoDistance(Double lat , Double lon) {
 		BoolQueryBuilder masterqueryBuilder = QueryBuilders.boolQuery();
 		GeoDistanceQueryBuilder distanceFilter = QueryBuilders.geoDistanceQuery("location");
-		distanceFilter.distance(1.0, DistanceUnit.KILOMETERS);
+		distanceFilter.distance(50.0, DistanceUnit.KILOMETERS);
 		distanceFilter.geoDistance(GeoDistance.PLANE);
 		distanceFilter.ignoreUnmapped(true);
 		distanceFilter.point(lat, lon);
