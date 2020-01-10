@@ -534,27 +534,6 @@ public class ESController {
 		}
 	}
 
-	@POST
-	@Path(ApiConstants.ESMAPPING + "/{index}")
-	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Post Mapping of Document to ES", notes = "Returns Success Failure", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-
-	public Response esPostMapping(@PathParam("index") String index) {
-		try {
-			MapQueryResponse response = null;
-			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
-			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
-			return Response.status(Status.OK).entity(response.getMessage()).build();
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-			throw new WebApplicationException(
-					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
-		}
-
-	}
 
 	@POST
 	@Path(ApiConstants.INDEX_ADMIN + "/{index}/{type}")
@@ -575,6 +554,28 @@ public class ESController {
 		}
 	}
 
+	@POST
+	@Path(ApiConstants.ESMAPPING + "/{index}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Post Mapping of Document to ES", notes = "Returns Success Failure", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	
+	public Response esPostMapping(@PathParam("index") String index) {
+		try {
+			MapQueryResponse response = null;
+			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
+			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
+			return Response.status(Status.OK).entity(response.getMessage()).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+		
+	}
+	
 	@SuppressWarnings("unchecked")
 	@GET
 	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
@@ -585,7 +586,7 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response autoCompletion(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("text") String fieldText,
-			@QueryParam("grouId") String filterField, @QueryParam("group") Integer filter) {
+			@QueryParam("groupId") String filterField, @QueryParam("group") Integer filter) {
 		
 		
 		String elasticIndex= utilityMethods.getEsindexconstants(index);

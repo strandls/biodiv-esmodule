@@ -748,9 +748,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		List<T> matchedResults = new ArrayList<T>();
-		QueryBuilder query = QueryBuilders.matchQuery(field, text);
+		//QueryBuilder query = QueryBuilders.matchQuery(field, text);
+		QueryBuilder query = QueryBuilders.matchPhraseQuery(field, text);
 		SearchRequest searchRequest = new SearchRequest(index);
-
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.size(100);
 		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
@@ -785,7 +785,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			field = "name";
 		}
 		List<T> matchedResults = new ArrayList<T>();
-		QueryBuilder query = QueryBuilders.boolQuery().must(QueryBuilders.matchQuery(field, text))
+		QueryBuilder query = QueryBuilders.boolQuery().must(QueryBuilders.matchPhraseQuery(field, text))
 				.filter(QueryBuilders.termQuery(filterField, filter));
 		SearchRequest searchRequest = new SearchRequest(index);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

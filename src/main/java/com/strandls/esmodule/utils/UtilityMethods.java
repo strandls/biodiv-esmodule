@@ -55,15 +55,25 @@ public class UtilityMethods {
 		HashMap<Integer, Integer> indexScores = new HashMap<Integer, Integer>();
 
 		for (ExtendedTaxonDefinition record : records) {
+			
 			int score = 0;
 			String name = record.getName();
 			String status = record.getStatus();
 			String position = record.getPosition();
 			String speciesName = record.getSpecies_title();
-			score += 1000 - name.indexOf(fieldText);
-
+			
+			//score += 1000 - (name.toLowerCase()).indexOf(fieldText.toLowerCase());
+			
 			if (name.equalsIgnoreCase(fieldText)) {
-				score += 100;
+				score += 1000;
+			}
+			
+			else if (name.matches(".* "+fieldText+" .*")) {
+				score += 500;
+			}
+			
+			else if((name.toLowerCase()).contains(fieldText.toLowerCase())) {
+				score += 400 - name.toLowerCase().indexOf(fieldText.toLowerCase());
 			}
 
 			if (status.equalsIgnoreCase("ACCEPTED")) {
