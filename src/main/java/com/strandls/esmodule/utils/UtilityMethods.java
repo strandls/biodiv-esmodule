@@ -64,16 +64,16 @@ public class UtilityMethods {
 			
 			//score += 1000 - (name.toLowerCase()).indexOf(fieldText.toLowerCase());
 			
+			
 			if (name.equalsIgnoreCase(fieldText)) {
 				score += 1000;
 			}
-			
-			else if (name.matches(".* "+fieldText+" .*")) {
+			else if (name.matches(".* "+fieldText+" .*") || name.toLowerCase().startsWith(fieldText.toLowerCase())) {
 				score += 500;
 			}
 			
 			else if((name.toLowerCase()).contains(fieldText.toLowerCase())) {
-				score += 400 - name.toLowerCase().indexOf(fieldText.toLowerCase());
+				score += 500 - name.toLowerCase().indexOf(fieldText.toLowerCase());
 			}
 
 			if (status.equalsIgnoreCase("ACCEPTED")) {
