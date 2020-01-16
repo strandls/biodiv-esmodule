@@ -26,6 +26,7 @@ import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -751,7 +752,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		List<T> matchedResults = new ArrayList<T>();
-		//QueryBuilder query = QueryBuilders.matchQuery(field, text);
 		QueryBuilder query = QueryBuilders.matchPhraseQuery(field, text);
 		SearchRequest searchRequest = new SearchRequest(index);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -792,7 +792,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				.filter(QueryBuilders.termQuery(filterField, filter));
 		SearchRequest searchRequest = new SearchRequest(index);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-		searchSourceBuilder.size(100);
+		searchSourceBuilder.size(10000);
 		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
 		SearchResponse searchResponse = null;
 		try {
@@ -803,9 +803,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
-//		List<String> matchedResults = Arrays.stream(searchResponse.getHits().getHits()).map(SearchHit::getSourceAsMap)
-//				.map(Map::values).flatMap(Collection::stream).map(Object::toString).collect(Collectors.toList());
 		for (SearchHit hit : searchResponse.getHits().getHits()) {
 			try {
 				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), classMapped));
@@ -816,28 +813,55 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return matchedResults;
 	}
 
+	
 	@Override
-	public ExtendedTaxonDefinition matchPhrase(String index, String type, String field, String text) {
-
-		if (field.equals("common_name")) {
-			field = "common_names.name.raw";
-		} else if (field.equals("name")) {
-			field = "name.raw";
-		}
-		List<ExtendedTaxonDefinition> matchedResults = new ArrayList<ExtendedTaxonDefinition>();
-		QueryBuilder query = QueryBuilders.matchPhraseQuery(field, text);
-		SearchRequest searchRequest = new SearchRequest(index);
+	public List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificName, String scientificText,
+			String canonicalName, String canonicalText) {
+		
+		String scientificFieldName = "name.raw";
+		String canonicalFieldName = "canonical_form";
+		
+		
+		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));
+		boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText));
+		
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
+		searchSourceBuilder.size(10000);
+		
 		SearchResponse searchResponse = null;
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
 		try {
-			searchSourceBuilder.query(query);
-			searchRequest.types(type);
+			searchSourceBuilder.query(boolQueryBuilder);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
+		
+		if(searchResponse.getHits().getTotalHits()==0)
+		{
+			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText);
+			try {
+				searchSourceBuilder.query(matchPhraseQueryBuilder);
+				searchRequest.source(searchSourceBuilder);
+				searchResponse = client.search(searchRequest);
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		}
+		
+		if(searchResponse.getHits().getTotalHits()==0)
+			return null;
+
+		return processElasticResponse(searchResponse);
+		
+	}
+	
+	private List<ExtendedTaxonDefinition> processElasticResponse(SearchResponse searchResponse){
+		List<ExtendedTaxonDefinition>matchedResults = new ArrayList<ExtendedTaxonDefinition>();
 		for (SearchHit hit : searchResponse.getHits().getHits()) {
 			try {
 				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), ExtendedTaxonDefinition.class));
@@ -845,9 +869,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				logger.error(e.getMessage());
 			}
 		}
-		if (matchedResults.size() == 0)
-			return null;
-		return matchedResults.get(0);
+		return matchedResults;
+		
 	}
-
 }

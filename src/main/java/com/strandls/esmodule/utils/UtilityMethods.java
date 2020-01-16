@@ -9,36 +9,24 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import com.strandls.esmodule.indexes.pojo.CommonName;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 
 public class UtilityMethods {
 	
-	@SuppressWarnings("serial")
-	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
-		{
-			put("etdi", "extended_taxon_definition");
-			put("etags","extended_tags");
-		}
-	};
-	
-	@SuppressWarnings("serial")
-	private static final HashMap<String, String>esIndexTypeConstant = new HashMap<String, String>(){
-		{
-			put("er","extended_records");	
-		}
-	};
-	
-	public String getEsindexconstants(String index) {
+	public String getEsIndexConstants(String index) {
 		return esIndexConstants.get(index);
 	}
 	
-	public String getEsindextypeconstant(String type) {
+	public String getEsIndexTypeConstant(String type) {
 		return esIndexTypeConstant.get(type);
 	}
 	
 	public List<String> getEsindexWithMapping(String index) {
-		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),
-				IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping()));
+		return new ArrayList<String>(
+				Arrays.asList(esIndexConstants.get(index),
+				IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping())
+				);
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -49,65 +37,182 @@ public class UtilityMethods {
 		}
 	}
 	
+	@SuppressWarnings("unlikely-arg-type")
 	public final List<ExtendedTaxonDefinition> rankDocument(List<ExtendedTaxonDefinition> records, String field,
 			String fieldText) {
 		int listIndex = 0;
 		HashMap<Integer, Integer> indexScores = new HashMap<Integer, Integer>();
-
+		List<Integer> negativeScoreIndexes = new ArrayList<Integer>();
+		boolean isCanonical = false;
+		if(field.equalsIgnoreCase("canonical_form"))
+			isCanonical = true;
+		
 		for (ExtendedTaxonDefinition record : records) {
 			
 			int score = 0;
+			boolean patternMatched = isCanonical;
 			String name = record.getName();
 			String status = record.getStatus();
 			String position = record.getPosition();
 			String speciesName = record.getSpecies_title();
 			
-			//score += 1000 - (name.toLowerCase()).indexOf(fieldText.toLowerCase());
+			ArrayList<String> fieldTextSpaceSplit = new ArrayList<String>(Arrays.asList(fieldText.toLowerCase().split(" ")));
+	        ArrayList<String> nameListSpaceSplit = new ArrayList<>(Arrays.asList(name.toLowerCase().split(" ")));
 			
+			fieldTextSpaceSplit.retainAll(nameListSpaceSplit);
+			
+			if(fieldTextSpaceSplit.size() >0 ) {
+				
+				score += fieldTextSpaceSplit.size()*5;
+				patternMatched = true;
+			}
 			
 			if (name.equalsIgnoreCase(fieldText)) {
-				score += 1000;
-			}
-			else if (name.matches(".* "+fieldText+" .*") || name.toLowerCase().startsWith(fieldText.toLowerCase())) {
-				score += 500;
+				score += 4000;
+				patternMatched = true;
 			}
 			
-			else if((name.toLowerCase()).contains(fieldText.toLowerCase())) {
-				score += 500 - name.toLowerCase().indexOf(fieldText.toLowerCase());
+			if(name.toLowerCase().startsWith(fieldText.toLowerCase())){
+				score += 2500;
+				patternMatched = true;
 			}
+			
 
 			if (status.equalsIgnoreCase("ACCEPTED")) {
-				score += 100;
+				score += 1000;
 			}
 
 			if (position.equalsIgnoreCase("CLEAN")) {
-				score += 300;
+				score += 299;
 			}
 
 			else if (position.equalsIgnoreCase("WORKING")) {
-				score += 200;
+				score += 199;
 			}
 
 			else if (position.equalsIgnoreCase("RAW")) {
-				score += 100;
+				score += 99;
 			}
-
+			
 			if (speciesName != null) {
 				score += 100;
 			}
+			
 			indexScores.put(listIndex, score);
-			listIndex += 1;
+			if(patternMatched != true) {
+				negativeScoreIndexes.add(listIndex);
+				}
+			listIndex ++;
 		}
+		
+		
+		indexScores.keySet().removeAll(negativeScoreIndexes);
+		records.removeAll(negativeScoreIndexes);
+		
 		LinkedHashMap<Integer, Integer> rankedIndex = sortHashMaponValue(indexScores);
 		ArrayList<Integer> orderedIndexes = new ArrayList<Integer>(rankedIndex.keySet());
 		return orderDocuments(orderedIndexes, records);
 	}
 
+	
+	public final List<ExtendedTaxonDefinition> rankDocumentBasedOnCommonName(List<ExtendedTaxonDefinition>records, String field, 
+			String fieldText){
+		
+		int listIndex = 0;
+		HashMap<Integer, Integer> indexScores = new HashMap<Integer, Integer>();
+		
+		for (ExtendedTaxonDefinition record : records) {
+			int score = 0;
+			int commonNameIndex = 0;
+			List<CommonName> commonNames = record.getCommon_names();
+			List<CommonName> matchedCommonRecords = new ArrayList<CommonName>();
+			HashMap<Integer, Integer> commonNameIndexScores = new HashMap<Integer, Integer>();
+			
+			for (CommonName commonName :commonNames ) {
+				int cscore = 0;
+				 String cname = commonName.getName();
+				 if(cname.equalsIgnoreCase(fieldText)) {
+					 cscore +=500;
+					 
+				 }
+				 if(cname.toLowerCase().startsWith(fieldText.toLowerCase())) {
+					 cscore += 100;
+				 }
+				 
+				 if(cname.toLowerCase().matches(".* "+fieldText+" .*")) {
+					 cscore +=10;
+				 }
+				 
+				 if(cname.toLowerCase().contains(fieldText.toLowerCase())) {
+					 cscore +=1;
+				 }
+				 
+				 if(cscore > 0) {
+					 matchedCommonRecords.add(commonName);
+					 commonNameIndexScores.put(commonNameIndex, cscore);
+					 score += cscore;
+				 }
+				 commonNameIndex++; 
+			}
+			
+			LinkedHashMap<Integer, Integer> rankedCommonIndex = sortHashMaponValue(commonNameIndexScores);
+			ArrayList<Integer> orderedIndexes = new ArrayList<Integer>(rankedCommonIndex.keySet());
+			commonNames = orderCommonNameRecords(orderedIndexes, commonNames);
+			record.setCommon_names(commonNames);
+			
+			String status = record.getStatus();
+			String position = record.getPosition();
+			String speciesName = record.getSpecies_title();
+			
+			if (status.equalsIgnoreCase("ACCEPTED")) {
+				score += 1000;
+			}
+
+			if (position.equalsIgnoreCase("CLEAN")) {
+				score += 299;
+			}
+
+			else if (position.equalsIgnoreCase("WORKING")) {
+				score += 199;
+			}
+
+			else if (position.equalsIgnoreCase("RAW")) {
+				score += 99;
+			}
+			
+			if (speciesName != null) {
+				score += 100;
+			}
+			
+			indexScores.put(listIndex, score);
+			listIndex++;
+		}
+		
+		LinkedHashMap<Integer, Integer> rankedIndex = sortHashMaponValue(indexScores);
+		ArrayList<Integer> orderedIndexes = new ArrayList<Integer>(rankedIndex.keySet());
+		return orderDocuments(orderedIndexes, records);
+		
+	}
+	
+	
 	private LinkedHashMap<Integer, Integer> sortHashMaponValue(HashMap<Integer, Integer> indexScores) {
 		return indexScores.entrySet().stream().sorted(Collections.reverseOrder(Entry.comparingByValue()))
 				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 	}
-
+	
+	
+	private List<CommonName> orderCommonNameRecords(ArrayList<Integer> orderedIndexes,
+			List<CommonName> records) {
+		
+		List<CommonName> orderedDocuments = new ArrayList<CommonName>();
+		for (Integer i : orderedIndexes) {
+			CommonName commonName = records.get(i);
+			orderedDocuments.add(commonName);
+		}
+		return orderedDocuments;
+	}
+	
+	
 	private List<ExtendedTaxonDefinition> orderDocuments(ArrayList<Integer> orderedIndexes,
 			List<ExtendedTaxonDefinition> records) {
 
@@ -118,4 +223,21 @@ public class UtilityMethods {
 		}
 		return orderedDocuments;
 	}
+	
+
+	
+	@SuppressWarnings("serial")
+	private static final HashMap<String, String> esIndexTypeConstant = new HashMap<String, String>(){
+		{
+			put("er","extended_records");	
+		}
+	};
+	
+	
+	@SuppressWarnings("serial")
+	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
+		{
+			put("etdi", "extended_taxon_definition");
+		}
+	};
 }

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -589,8 +590,8 @@ public class ESController {
 			@QueryParam("groupId") String filterField, @QueryParam("group") Integer filter) {
 		
 		
-		String elasticIndex= utilityMethods.getEsindexconstants(index);
-		String elasticType = utilityMethods.getEsindextypeconstant(type);
+		String elasticIndex= utilityMethods.getEsIndexConstants(index);
+		String elasticType = utilityMethods.getEsIndexTypeConstant(type);
 		
 		try {
 			List<? extends ElasticIndexes> records = null;
@@ -600,7 +601,12 @@ public class ESController {
 				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField, filter, utilityMethods.getClass(index));
 			}
 			if(index.equals("etdi")) {
-				records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, filterField, fieldText);
+				if(field.equals("name")){
+					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
+				}
+				else if(field.equals("common_name")) {
+					records = utilityMethods.rankDocumentBasedOnCommonName((List<ExtendedTaxonDefinition>) records, filterField, fieldText);
+				}
 			}
 			return Response.status(Status.OK).entity(records).build();
 		} catch (Exception e) {
@@ -609,28 +615,34 @@ public class ESController {
 		}
 
 	}
-
+	
 	@GET
 	@Path(ApiConstants.matchPhrase + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
+	
 	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	public Response matchPhrase(@PathParam("index") String index, @PathParam("type") String type,
-			@QueryParam("field") String field, @QueryParam("text") String fieldText) {
+	public Response matchPhrase(@DefaultValue("etdi")@PathParam("index") String index, @DefaultValue("er")@PathParam("type") String type,
+			@DefaultValue("name")@QueryParam("scientificField") String scientificField, @QueryParam("scientificText") String scientificText,
+			@DefaultValue("canonical_form")@QueryParam("canonicalField")String canonicalField, @QueryParam("canonicalText")String canonicalText) {
 		
-		index= utilityMethods.getEsindexconstants(index);
-		type = utilityMethods.getEsindextypeconstant(type);
+		index= utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
 		
 		try {
-			ExtendedTaxonDefinition record = elasticSearchService.matchPhrase(index, type, field,
-					fieldText);
-			return Response.status(Status.OK).entity(record).build();
+			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField, 
+					scientificText, canonicalField, canonicalText);
+			if(records != null && records.size()>1) {
+				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
+				return Response.status(Status.OK).entity(records.get(0)).build();
+			}
+			return Response.status(Status.OK).entity(records).build();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
 		}
 	}
+
 
 }

@@ -230,17 +230,28 @@ public interface ElasticSearchService {
 	 * @return
 	 */
 	<T> List<T> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter,Class<T> classMapped);
-	<T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped);	
-	
 	/**
+	 * @param <T>
 	 * @param index
 	 * @param type
 	 * @param field
 	 * @param text
+	 * @param classMapped
 	 * @return
 	 */
-	ExtendedTaxonDefinition matchPhrase(String index, String type, String field, String text);
-	
+	<T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped);	
+
+	/**
+	 * @param index
+	 * @param type
+	 * @param scientificField
+	 * @param scientificText
+	 * @param canonicalField
+	 * @param canonicalText
+	 * @return
+	 */
+	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificField, String scientificText, 
+			String canonicalField, String canonicalText);
 	//List<String> getAutoSuggestionSearch(String index, String type, String){
 		
 		
