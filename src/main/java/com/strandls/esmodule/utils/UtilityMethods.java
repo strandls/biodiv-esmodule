@@ -14,6 +14,15 @@ import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 
 public class UtilityMethods {
 	
+	public String getAggregationScoreScript(String score) {
+		switch(score) {
+		case "A": return Scripts.ActivityScore.getScript();
+		case "C" : return Scripts.ContentScore.getScript();
+		case "P" : return Scripts.ParticipateScore.getScript();
+		default : return null;
+		}
+	}
+	
 	public String getEsIndexConstants(String index) {
 		return esIndexConstants.get(index);
 	}
@@ -238,6 +247,7 @@ public class UtilityMethods {
 	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
 		{
 			put("etdi", "extended_taxon_definition");
+			put("eaf","extended_activity_feed");
 		}
 	};
 }

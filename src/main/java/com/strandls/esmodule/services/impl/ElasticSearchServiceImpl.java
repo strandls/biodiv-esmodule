@@ -2,8 +2,10 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,13 +24,18 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse.ShardInfo;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.xcontent.ToXContent;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -37,7 +44,13 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.missing.Missing;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
+import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
+import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
+import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +93,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticSearchServiceImpl.class);
-
+	
+	private static final Integer TotalUserUpperBound = 20000;
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -95,7 +109,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		IndexRequest request = new IndexRequest(index, type, documentId);
 		request.source(document, XContentType.JSON);
-		IndexResponse indexResponse = client.index(request);
+		// IndexResponse indexResponse = client.index(request); DEPRECATED
+		IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
 
 		ReplicationResponse.ShardInfo shardInfo = indexResponse.getShardInfo();
 
@@ -129,7 +144,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		logger.info("Trying to fetch index: {}, type: {} & id: {}", index, type, documentId);
 
 		GetRequest request = new GetRequest(index, type, documentId);
-		GetResponse response = client.get(request);
+		// GetResponse response = client.get(request); DEPRECATED
+		GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
 		logger.info("Fetched index: {}, type: {} & id: {} with status {}", index, type, documentId,
 				response.isExists());
@@ -152,8 +168,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		UpdateRequest request = new UpdateRequest(index, type, documentId);
 		request.doc(document);
-		UpdateResponse updateResponse = client.update(request);
-
+		// UpdateResponse updateResponse = client.update(request); DEPRECATED
+		UpdateResponse updateResponse = client.update(request, RequestOptions.DEFAULT);
 		ShardInfo shardInfo = updateResponse.getShardInfo();
 
 		String failureReason = "";
@@ -184,8 +200,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		logger.info("Trying to delete index: {}, type: {} & id: {}", index, type, documentId);
 
 		DeleteRequest request = new DeleteRequest(index, type, documentId);
-		DeleteResponse deleteResponse = client.delete(request);
-
+		// DeleteResponse deleteResponse = client.delete(request);
+		DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
 		ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
 
 		String failureReason = "";
@@ -249,8 +265,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			request.add(
 					new IndexRequest(index, type, json.get("id").asText()).source(json.toString(), XContentType.JSON));
 
-		BulkResponse bulkResponse = client.bulk(request);
-
+		// BulkResponse bulkResponse = client.bulk(request);
+		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 		for (BulkItemResponse bulkItemResponse : bulkResponse) {
 
 			StringBuilder failureReason = new StringBuilder();
@@ -357,8 +373,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
-		System.out.println(searchRequest);
-		SearchResponse searchResponse = client.search(searchRequest);
+		// SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
 		List<MapDocument> result = new ArrayList<>();
 
@@ -372,8 +388,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String aggregationString = null;
 		if (geoAggregationField != null) {
 			Aggregation aggregation = searchResponse.getAggregations().asList().get(0);
-			aggregationString = XContentHelper.toString(aggregation);
+			XContentBuilder builder = XContentFactory.jsonBuilder();
+			builder.startObject();
+			aggregation.toXContent(builder, ToXContent.EMPTY_PARAMS);
+			builder.endObject();
+			String result2 = Strings.toString(builder);
+			aggregationString = result2;
+//			aggregationString = XContentHelper.convertToJson(builder, reformatJson)
 			logger.info("Aggregation search: {} completed", aggregation.getName());
+
 		}
 
 		return new MapResponse(result, totalHits, aggregationString);
@@ -533,7 +556,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		mapResponse.setViewFilteredGeohashAggregation(mapResponse.getGeohashAggregation());
 		mapResponse.setGeohashAggregation(geohashAggregation);
 		mapResponse.setTermsAggregation(termsAggregation);
-
+		
 		return mapResponse;
 	}
 
@@ -597,12 +620,19 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
-		SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
 		Aggregation aggregation = searchResponse.getAggregations().asList().get(0);
+		XContentBuilder builder = XContentFactory.jsonBuilder();
+		builder.startObject();
+		aggregation.toXContent(builder, ToXContent.EMPTY_PARAMS);
+//		String result2 = Strings.toString(builder);
+		builder.endObject();
+		String result2 = Strings.toString(builder);
 		logger.info("Aggregation search: {} completed", aggregation.getName());
 
-		return new MapDocument(XContentHelper.toString(aggregation));
+		// return new MapDocument(XContentHelper.toString(aggregation));
+		return new MapDocument(result2);
 
 	}
 
@@ -620,7 +650,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchRequest request = new SearchRequest(index);
 		request.types(type);
 		request.source(sourceBuilder);
-		SearchResponse response = client.search(request);
+		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
 
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
@@ -662,7 +692,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.types(type);
 		request.source(sourceBuilder);
 
-		SearchResponse response = client.search(request);
+		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
 
 		List<SimilarObservation> similarObservation = new ArrayList<SimilarObservation>();
 		List<ObservationMapInfo> latlon = new ArrayList<ObservationMapInfo>();
@@ -702,7 +732,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.types(type);
 		request.source(sourceBuilder);
 
-		SearchResponse response = client.search(request);
+		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
 
 		List<ObservationNearBy> nearBy = new ArrayList<ObservationNearBy>();
 
@@ -762,7 +792,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(query);
 			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
-			searchResponse = client.search(searchRequest);
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
@@ -799,7 +829,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(query);
 			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
-			searchResponse = client.search(searchRequest);
+			// searchResponse = client.search(searchRequest);
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
@@ -813,55 +844,203 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return matchedResults;
 	}
 
-	
 	@Override
-	public List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificName, String scientificText,
-			String canonicalName, String canonicalText) {
-		
+	public List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificName,
+			String scientificText, String canonicalName, String canonicalText) {
+
 		String scientificFieldName = "name.raw";
 		String canonicalFieldName = "canonical_form";
-		
-		
+
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));
 		boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText));
-		
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.fetchSource(null, new String[] { "@timestamp", "@version" });
 		searchSourceBuilder.size(10000);
-		
+
 		SearchResponse searchResponse = null;
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
 		try {
 			searchSourceBuilder.query(boolQueryBuilder);
 			searchRequest.source(searchSourceBuilder);
-			searchResponse = client.search(searchRequest);
+//			searchResponse = client.search(searchRequest); DEPRECATED
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		
-		if(searchResponse.getHits().getTotalHits()==0)
-		{
-			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText);
+
+		if (searchResponse.getHits().getTotalHits() == 0) {
+			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery(canonicalFieldName,
+					canonicalText);
 			try {
 				searchSourceBuilder.query(matchPhraseQueryBuilder);
 				searchRequest.source(searchSourceBuilder);
-				searchResponse = client.search(searchRequest);
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
 		}
-		
-		if(searchResponse.getHits().getTotalHits()==0)
+
+		if (searchResponse.getHits().getTotalHits() == 0)
 			return null;
 
 		return processElasticResponse(searchResponse);
-		
+
 	}
 	
-	private List<ExtendedTaxonDefinition> processElasticResponse(SearchResponse searchResponse){
-		List<ExtendedTaxonDefinition>matchedResults = new ArrayList<ExtendedTaxonDefinition>();
+	@Override
+	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getUserScore(String index,
+			String type, Integer authorId) {
+		AggregationBuilder aggs = buildSortingAggregation(1, null);
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+				.filter(QueryBuilders.termQuery("author_id", authorId));
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		aggs.subAggregation(populateDataAggregation());
+		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
+		aggs.subAggregation(termsAggregation("author_name", "name.keyword"));
+		searchSourceBuilder.aggregation(aggs);
+		searchSourceBuilder.query(queryBuilder);
+		searchSourceBuilder.size(0);
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		SearchResponse searchResponse = null;
+		searchRequest.source(searchSourceBuilder);
+		try {
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		
+		return processAggregationResponse(searchResponse);
+	}
+
+	@Override
+	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers
+	(String index,String type, String sortingValue, Integer topUser) {
+		
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
+		searchSourceBuilder.aggregation(aggs);
+		searchSourceBuilder.size(0);
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		searchRequest.source(searchSourceBuilder);
+		
+		SearchResponse searchResponse = null;
+		try {
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
+		//processAggregationResponse(searchRespone
+		List<Integer> topUserIds = getUserIds(searchResponse);
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+				.filter(QueryBuilders.termsQuery("author_id", topUserIds));
+		searchSourceBuilder = new SearchSourceBuilder();
+		aggs.subAggregation(populateDataAggregation());
+		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
+		aggs.subAggregation(termsAggregation("author_name", "name.keyword"));
+		searchSourceBuilder.aggregation(aggs);
+		searchSourceBuilder.query(queryBuilder);
+		searchSourceBuilder.size(0);
+		searchRequest.source(searchSourceBuilder);
+		
+		try {
+			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+		} catch (IOException e) {
+			logger.info(e.getMessage());
+		}
+		return processAggregationResponse(searchResponse);
+	}
+
+	private AggregationBuilder buildSortingAggregation(Integer topUser, String sortingValue) {
+		String sortingField = null;
+		AggregationBuilder aggs = termsAggregation("group_by_author", "author_id",TotalUserUpperBound);
+		aggs.subAggregation(
+				filterAggregation("group_by_score_category_participate", "score_category.keyword", 
+						"Participation"));
+		aggs.subAggregation(filterAggregation("group_by_score_category_content", "score_category.keyword", 
+				"Content"));
+		if (sortingValue != null) {
+			if(sortingValue.contains(".")) {
+				sortingField = "module_activity_category.keyword";
+			}
+			else {
+				sortingField = "module.keyword";
+			}
+			aggs.subAggregation(filterAggregation("group_by_module", sortingField, sortingValue));
+		}
+		
+		aggs.subAggregation(getBucketScriptAggregation());
+		aggs.subAggregation(getBucketSortAggregation(sortingValue, topUser));
+		return aggs;
+	}
+	
+	private AggregationBuilder populateDataAggregation()
+	{
+			
+			AggregationBuilder aggs = termsAggregation("bucket_by_module", "module.keyword")
+					.subAggregation(termsAggregation("bucket_by_activity_category", 
+							"activity_category.keyword"));
+			return aggs;
+	}
+	
+	private AggregationBuilder termsAggregation(String aggregationName, String field, Integer totalBucket) {
+		// List<BucketOrder> order = new ArrayList<BucketOrder>();
+		AggregationBuilder aggs = AggregationBuilders.terms(aggregationName).field(field).size(totalBucket);
+		return aggs;
+	}
+
+	private AggregationBuilder termsAggregation(String aggregationName, String field) {
+		
+		AggregationBuilder aggs = AggregationBuilders.terms(aggregationName)
+				.field(field).size(100);
+		return aggs;
+	}
+	
+
+	private AggregationBuilder filterAggregation(String aggregationName, String field, String fieldValue) {
+
+		AggregationBuilder aggs = AggregationBuilders.filter(aggregationName,
+				QueryBuilders.termQuery(field, fieldValue));
+
+		return aggs;
+	}
+	
+	private BucketScriptPipelineAggregationBuilder getBucketScriptAggregation() {
+		Map<String, String> bucketsPathsMap = new HashMap<>();
+		bucketsPathsMap.put("participate", "group_by_score_category_participate>_count");
+		bucketsPathsMap.put("content", "group_by_score_category_content>_count");
+		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.participate)))");
+
+		BucketScriptPipelineAggregationBuilder bucketScript = 
+				PipelineAggregatorBuilders.bucketScript("activity_score",bucketsPathsMap, script);
+		return bucketScript;
+	}
+
+	private BucketSortPipelineAggregationBuilder getBucketSortAggregation(String sortingValue, int topUsers) {
+		List<FieldSortBuilder> sortingCriteriaList = new ArrayList<FieldSortBuilder>();
+		String sortOnAggregation = null;
+		if (sortingValue == null) {
+			sortOnAggregation = "activity_score";
+		}
+		else {
+			sortOnAggregation = "group_by_module"+">_count";
+		}
+		
+		FieldSortBuilder sortOn = new FieldSortBuilder(sortOnAggregation).order(SortOrder.DESC);
+		sortingCriteriaList.add(sortOn);
+		
+		BucketSortPipelineAggregationBuilder bucketSort = PipelineAggregatorBuilders
+				.bucketSort("bucket_sorting", sortingCriteriaList).size(topUsers);
+
+		return bucketSort;
+	}
+
+	private List<ExtendedTaxonDefinition> processElasticResponse(SearchResponse searchResponse) {
+		List<ExtendedTaxonDefinition> matchedResults = new ArrayList<ExtendedTaxonDefinition>();
 		for (SearchHit hit : searchResponse.getHits().getHits()) {
 			try {
 				matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), ExtendedTaxonDefinition.class));
@@ -870,6 +1049,62 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 		}
 		return matchedResults;
-		
 	}
+
+	private List<Integer> getUserIds(SearchResponse searchResponse) {
+		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
+		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
+		List<Integer> topAuthors = new ArrayList<Integer>();
+		for(Bucket authorBucket : authorBuckets) {
+			topAuthors.add(authorBucket.getKeyAsNumber().intValue());
+		}
+		return topAuthors;
+
+	}
+
+	private List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> processAggregationResponse(
+			SearchResponse searchResponse) {
+		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
+		
+		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
+		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
+
+		for (Bucket authorBucket : authorBuckets) {
+			LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>> userRecord = new LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>();
+			
+			Terms moduleTerms = authorBucket.getAggregations().get("bucket_by_module");
+			Collection<? extends Bucket> moduleBuckets = moduleTerms.getBuckets();
+			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = new LinkedHashMap<String, LinkedHashMap<String, String>>();
+
+			for (Bucket moduleBucket : moduleBuckets) {
+				Terms activityTerms = moduleBucket.getAggregations().get("bucket_by_activity_category");
+				Collection<? extends Bucket> activityBuckets = activityTerms.getBuckets();
+				LinkedHashMap<String, String> activities = new LinkedHashMap<String, String>();
+
+				for (Bucket activityBucket : activityBuckets) {
+					activities.put(activityBucket.getKeyAsString(), String.valueOf(activityBucket.getDocCount()));
+				}
+				moduleRecords.put(moduleBucket.getKeyAsString(), activities);
+			}
+			LinkedHashMap<String, String> userDetails = new LinkedHashMap<String, String>();
+			
+			Terms detailTerms = authorBucket.getAggregations().get("author_name");
+			for(Bucket bucket : detailTerms.getBuckets()) {
+				userDetails.put("authorName", bucket.getKeyAsString());
+			}
+			
+			detailTerms = authorBucket.getAggregations().get("profile_pic");
+			for(Bucket bucket : detailTerms.getBuckets()) {
+				userDetails.put("profilePic", bucket.getKeyAsString());
+			}
+			ParsedSimpleValue activityScoreTerms = authorBucket.getAggregations().get("activity_score");
+			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
+			
+			moduleRecords.put("details", userDetails);
+			userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
+			records.add(userRecord);
+		}
+		return records;
+	}
+	
 }

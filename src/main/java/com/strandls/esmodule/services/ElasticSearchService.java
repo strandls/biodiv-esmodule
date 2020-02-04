@@ -1,6 +1,7 @@
 package com.strandls.esmodule.services;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -254,6 +255,26 @@ public interface ElasticSearchService {
 			String canonicalField, String canonicalText);
 	//List<String> getAutoSuggestionSearch(String index, String type, String){
 		
-		
+	
+	/**
+	 * @param index
+	 * @param type
+	 * @param sortOn
+	 * @param sortBy
+	 * @param topUser
+	 * @return 
+	 */
+	List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers
+	(String index, String type, String sortingValue, Integer topUser);
+	
+	
+	/**
+	 * @param index
+	 * @param type
+	 * @param authorId
+	 * @return
+	 */
+	List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getUserScore
+	(String index, String type, Integer authorId);
 	
 }
