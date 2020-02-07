@@ -93,8 +93,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticSearchServiceImpl.class);
-	
+
 	private static final Integer TotalUserUpperBound = 20000;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -144,7 +145,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		logger.info("Trying to fetch index: {}, type: {} & id: {}", index, type, documentId);
 
 		GetRequest request = new GetRequest(index, type, documentId);
-		// GetResponse response = client.get(request); DEPRECATED
 		GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
 		logger.info("Fetched index: {}, type: {} & id: {} with status {}", index, type, documentId,
@@ -168,7 +168,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		UpdateRequest request = new UpdateRequest(index, type, documentId);
 		request.doc(document);
-		// UpdateResponse updateResponse = client.update(request); DEPRECATED
 		UpdateResponse updateResponse = client.update(request, RequestOptions.DEFAULT);
 		ShardInfo shardInfo = updateResponse.getShardInfo();
 
@@ -200,7 +199,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		logger.info("Trying to delete index: {}, type: {} & id: {}", index, type, documentId);
 
 		DeleteRequest request = new DeleteRequest(index, type, documentId);
-		// DeleteResponse deleteResponse = client.delete(request);
 		DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
 		ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
 
@@ -310,7 +308,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		for (Map<String, Object> doc : updateDocs)
 			request.add(new UpdateRequest(index, type, doc.get("id").toString()).doc(doc));
 
-		BulkResponse bulkResponse = client.bulk(request);
+		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 
 		List<MapQueryResponse> responses = new ArrayList<>();
 
@@ -556,7 +554,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		mapResponse.setViewFilteredGeohashAggregation(mapResponse.getGeohashAggregation());
 		mapResponse.setGeohashAggregation(geohashAggregation);
 		mapResponse.setTermsAggregation(termsAggregation);
-		
+
 		return mapResponse;
 	}
 
@@ -650,7 +648,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchRequest request = new SearchRequest(index);
 		request.types(type);
 		request.source(sourceBuilder);
-		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
+		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
@@ -692,7 +690,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.types(type);
 		request.source(sourceBuilder);
 
-		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
+		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
 		List<SimilarObservation> similarObservation = new ArrayList<SimilarObservation>();
 		List<ObservationMapInfo> latlon = new ArrayList<ObservationMapInfo>();
@@ -732,7 +730,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.types(type);
 		request.source(sourceBuilder);
 
-		SearchResponse response = client.search(request,RequestOptions.DEFAULT);
+		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
 		List<ObservationNearBy> nearBy = new ArrayList<ObservationNearBy>();
 
@@ -889,13 +887,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return processElasticResponse(searchResponse);
 
 	}
-	
+
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getUserScore(String index,
 			String type, Integer authorId) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.filter(QueryBuilders.termQuery("author_id", authorId));
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId));
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -912,14 +909,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		
+
 		return processAggregationResponse(searchResponse);
 	}
 
 	@Override
-	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers
-	(String index,String type, String sortingValue, Integer topUser) {
-		
+	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers(String index,
+			String type, String sortingValue, Integer topUser) {
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
 		searchSourceBuilder.aggregation(aggs);
@@ -927,17 +924,16 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
-		
+
 		SearchResponse searchResponse = null;
 		try {
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
-		//processAggregationResponse(searchRespone
+		// processAggregationResponse(searchRespone
 		List<Integer> topUserIds = getUserIds(searchResponse);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.filter(QueryBuilders.termsQuery("author_id", topUserIds));
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("author_id", topUserIds));
 		searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -946,7 +942,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		searchSourceBuilder.query(queryBuilder);
 		searchSourceBuilder.size(0);
 		searchRequest.source(searchSourceBuilder);
-		
+
 		try {
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (IOException e) {
@@ -957,36 +953,31 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	private AggregationBuilder buildSortingAggregation(Integer topUser, String sortingValue) {
 		String sortingField = null;
-		AggregationBuilder aggs = termsAggregation("group_by_author", "author_id",TotalUserUpperBound);
+		AggregationBuilder aggs = termsAggregation("group_by_author", "author_id", TotalUserUpperBound);
 		aggs.subAggregation(
-				filterAggregation("group_by_score_category_participate", "score_category.keyword", 
-						"Participation"));
-		aggs.subAggregation(filterAggregation("group_by_score_category_content", "score_category.keyword", 
-				"Content"));
+				filterAggregation("group_by_score_category_participate", "score_category.keyword", "Participation"));
+		aggs.subAggregation(filterAggregation("group_by_score_category_content", "score_category.keyword", "Content"));
 		if (sortingValue != null) {
-			if(sortingValue.contains(".")) {
+			if (sortingValue.contains(".")) {
 				sortingField = "module_activity_category.keyword";
-			}
-			else {
+			} else {
 				sortingField = "module.keyword";
 			}
 			aggs.subAggregation(filterAggregation("group_by_module", sortingField, sortingValue));
 		}
-		
+
 		aggs.subAggregation(getBucketScriptAggregation());
 		aggs.subAggregation(getBucketSortAggregation(sortingValue, topUser));
 		return aggs;
 	}
-	
-	private AggregationBuilder populateDataAggregation()
-	{
-			
-			AggregationBuilder aggs = termsAggregation("bucket_by_module", "module.keyword")
-					.subAggregation(termsAggregation("bucket_by_activity_category", 
-							"activity_category.keyword"));
-			return aggs;
+
+	private AggregationBuilder populateDataAggregation() {
+
+		AggregationBuilder aggs = termsAggregation("bucket_by_module", "module.keyword")
+				.subAggregation(termsAggregation("bucket_by_activity_category", "activity_category.keyword"));
+		return aggs;
 	}
-	
+
 	private AggregationBuilder termsAggregation(String aggregationName, String field, Integer totalBucket) {
 		// List<BucketOrder> order = new ArrayList<BucketOrder>();
 		AggregationBuilder aggs = AggregationBuilders.terms(aggregationName).field(field).size(totalBucket);
@@ -994,12 +985,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	private AggregationBuilder termsAggregation(String aggregationName, String field) {
-		
-		AggregationBuilder aggs = AggregationBuilders.terms(aggregationName)
-				.field(field).size(100);
+
+		AggregationBuilder aggs = AggregationBuilders.terms(aggregationName).field(field).size(100);
 		return aggs;
 	}
-	
 
 	private AggregationBuilder filterAggregation(String aggregationName, String field, String fieldValue) {
 
@@ -1008,15 +997,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		return aggs;
 	}
-	
+
 	private BucketScriptPipelineAggregationBuilder getBucketScriptAggregation() {
 		Map<String, String> bucketsPathsMap = new HashMap<>();
 		bucketsPathsMap.put("participate", "group_by_score_category_participate>_count");
 		bucketsPathsMap.put("content", "group_by_score_category_content>_count");
 		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.participate)))");
 
-		BucketScriptPipelineAggregationBuilder bucketScript = 
-				PipelineAggregatorBuilders.bucketScript("activity_score",bucketsPathsMap, script);
+		BucketScriptPipelineAggregationBuilder bucketScript = PipelineAggregatorBuilders.bucketScript("activity_score",
+				bucketsPathsMap, script);
 		return bucketScript;
 	}
 
@@ -1025,14 +1014,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String sortOnAggregation = null;
 		if (sortingValue == null) {
 			sortOnAggregation = "activity_score";
+		} else {
+			sortOnAggregation = "group_by_module" + ">_count";
 		}
-		else {
-			sortOnAggregation = "group_by_module"+">_count";
-		}
-		
+
 		FieldSortBuilder sortOn = new FieldSortBuilder(sortOnAggregation).order(SortOrder.DESC);
 		sortingCriteriaList.add(sortOn);
-		
+
 		BucketSortPipelineAggregationBuilder bucketSort = PipelineAggregatorBuilders
 				.bucketSort("bucket_sorting", sortingCriteriaList).size(topUsers);
 
@@ -1055,7 +1043,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
 		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
 		List<Integer> topAuthors = new ArrayList<Integer>();
-		for(Bucket authorBucket : authorBuckets) {
+		for (Bucket authorBucket : authorBuckets) {
 			topAuthors.add(authorBucket.getKeyAsNumber().intValue());
 		}
 		return topAuthors;
@@ -1065,13 +1053,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> processAggregationResponse(
 			SearchResponse searchResponse) {
 		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
-		
+
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
 		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
 
 		for (Bucket authorBucket : authorBuckets) {
 			LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>> userRecord = new LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>();
-			
+
 			Terms moduleTerms = authorBucket.getAggregations().get("bucket_by_module");
 			Collection<? extends Bucket> moduleBuckets = moduleTerms.getBuckets();
 			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = new LinkedHashMap<String, LinkedHashMap<String, String>>();
@@ -1087,24 +1075,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				moduleRecords.put(moduleBucket.getKeyAsString(), activities);
 			}
 			LinkedHashMap<String, String> userDetails = new LinkedHashMap<String, String>();
-			
+
 			Terms detailTerms = authorBucket.getAggregations().get("author_name");
-			for(Bucket bucket : detailTerms.getBuckets()) {
+			for (Bucket bucket : detailTerms.getBuckets()) {
 				userDetails.put("authorName", bucket.getKeyAsString());
 			}
-			
+
 			detailTerms = authorBucket.getAggregations().get("profile_pic");
-			for(Bucket bucket : detailTerms.getBuckets()) {
+			for (Bucket bucket : detailTerms.getBuckets()) {
 				userDetails.put("profilePic", bucket.getKeyAsString());
 			}
 			ParsedSimpleValue activityScoreTerms = authorBucket.getAggregations().get("activity_score");
 			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
-			
+
 			moduleRecords.put("details", userDetails);
 			userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
 			records.add(userRecord);
 		}
 		return records;
 	}
-	
+
 }

@@ -14,6 +14,7 @@ import java.util.zip.ZipOutputStream;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -84,7 +85,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 
 	private void downloadJson(SearchRequest searchRequest, ZipOutputStream out) throws IOException {
 
-		SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
 		System.out.println(searchResponse.toString());
 		do {
 
@@ -94,7 +95,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.searchScroll(request);
+			searchResponse = client.searchScroll(request,RequestOptions.DEFAULT);
 
 		} while (searchResponse.getHits().getHits().length != 0);
 
@@ -102,7 +103,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 
 	private void downloadCSV(SearchRequest searchRequest, ZipOutputStream out) throws IOException {
 
-		SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
 
 		boolean first = true;
 		Set<String> headerSet = new HashSet<>();
@@ -129,7 +130,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.searchScroll(request);
+			searchResponse = client.searchScroll(request,RequestOptions.DEFAULT);
 		} while (searchResponse.getHits().getHits().length != 0);
 
 	}

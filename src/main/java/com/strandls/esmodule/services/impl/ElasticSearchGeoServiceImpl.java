@@ -7,12 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -56,7 +54,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
-		SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		List<MapDocument> result = new ArrayList<>();
 
 		long totalHits = searchResponse.getHits().getTotalHits();
@@ -88,8 +86,8 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	}
 
 	@Override
-	public Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision, Double top,
-			Double left, Double bottom, Double right) throws IOException {
+	public Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision,
+			Double top, Double left, Double bottom, Double right) throws IOException {
 
 		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
 
@@ -97,7 +95,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 				.precision(precision);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-		if(top != null && left != null && bottom != null && right != null)
+		if (top != null && left != null && bottom != null && right != null)
 			searchSourceBuilder.query(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
 
 		searchSourceBuilder.aggregation(aggregationBuilder);
@@ -107,7 +105,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		searchRequest.source(searchSourceBuilder);
 
 		try {
-			SearchResponse searchResponse = client.search(searchRequest);
+			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 			Aggregations aggregations = searchResponse.getAggregations();
 			ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
 

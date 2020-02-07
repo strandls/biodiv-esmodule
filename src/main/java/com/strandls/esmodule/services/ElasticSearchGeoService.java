@@ -3,8 +3,6 @@ package com.strandls.esmodule.services;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.ws.rs.core.Response;
-
 import com.strandls.esmodule.models.MapResponse;
 
 /**
