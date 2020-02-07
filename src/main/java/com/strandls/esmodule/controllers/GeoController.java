@@ -1,6 +1,7 @@
 package com.strandls.esmodule.controllers;
 
 import java.io.IOException;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -51,6 +52,26 @@ public class GeoController {
 
 		try {
 			return service.getGeoWithinDocuments(index, type, geoField, top, left, bottom, right);
+		} catch (IOException e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@GET
+	@Path(ApiConstants.AGGREGATION + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Aggregation", notes = "Returns Data", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getGeoAggregation(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("geoField") String geoField, @QueryParam("precision") Integer precision, 
+			@QueryParam("top") Double top, @QueryParam("left") Double left,
+			@QueryParam("bottom") Double bottom, @QueryParam("right") Double right) {
+		try {
+			Map<String, Long> hashToDocCount = service.getGeoAggregation(index, type, geoField, precision, top, left, bottom, right); 
+			return Response.ok().entity(hashToDocCount).build();
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
