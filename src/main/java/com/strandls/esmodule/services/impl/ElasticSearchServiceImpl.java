@@ -889,7 +889,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getUserScore(String index,
+	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index,
 			String type, Integer authorId) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
 		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId));
@@ -914,7 +914,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers(String index,
+	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index,
 			String type, String sortingValue, Integer topUser) {
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -1050,19 +1050,25 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	}
 
-	private List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> processAggregationResponse(
+	private List<LinkedHashMap<String, LinkedHashMap<String, String>>> processAggregationResponse(
 			SearchResponse searchResponse) {
-		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
+//		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
+//				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
+				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
+		
 
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
 		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
 
 		for (Bucket authorBucket : authorBuckets) {
-			LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>> userRecord = new LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>();
+			LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>> userRecord = 
+					new LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>();
 
 			Terms moduleTerms = authorBucket.getAggregations().get("bucket_by_module");
 			Collection<? extends Bucket> moduleBuckets = moduleTerms.getBuckets();
-			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = new LinkedHashMap<String, LinkedHashMap<String, String>>();
+			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = 
+					new LinkedHashMap<String, LinkedHashMap<String, String>>();
 
 			for (Bucket moduleBucket : moduleBuckets) {
 				Terms activityTerms = moduleBucket.getAggregations().get("bucket_by_activity_category");
@@ -1070,9 +1076,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				LinkedHashMap<String, String> activities = new LinkedHashMap<String, String>();
 
 				for (Bucket activityBucket : activityBuckets) {
-					activities.put(activityBucket.getKeyAsString(), String.valueOf(activityBucket.getDocCount()));
+					activities.put(activityBucket.getKeyAsString().toLowerCase(), String.valueOf(activityBucket.getDocCount()));
 				}
-				moduleRecords.put(moduleBucket.getKeyAsString(), activities);
+				moduleRecords.put(moduleBucket.getKeyAsString().toLowerCase(), activities);
 			}
 			LinkedHashMap<String, String> userDetails = new LinkedHashMap<String, String>();
 
@@ -1080,7 +1086,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			for (Bucket bucket : detailTerms.getBuckets()) {
 				userDetails.put("authorName", bucket.getKeyAsString());
 			}
-
+			userDetails.put("author_id", authorBucket.getKeyAsString());
 			detailTerms = authorBucket.getAggregations().get("profile_pic");
 			for (Bucket bucket : detailTerms.getBuckets()) {
 				userDetails.put("profilePic", bucket.getKeyAsString());
@@ -1089,8 +1095,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
 
 			moduleRecords.put("details", userDetails);
-			userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
-			records.add(userRecord);
+			//userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
+			records.add(moduleRecords);
 		}
 		return records;
 	}

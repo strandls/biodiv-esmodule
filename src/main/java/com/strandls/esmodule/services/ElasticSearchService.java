@@ -264,7 +264,7 @@ public interface ElasticSearchService {
 	 * @param topUser
 	 * @return 
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getTopUsers
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers
 	(String index, String type, String sortingValue, Integer topUser);
 	
 	
@@ -274,7 +274,7 @@ public interface ElasticSearchService {
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> getUserScore
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore
 	(String index, String type, Integer authorId);
 	
 }

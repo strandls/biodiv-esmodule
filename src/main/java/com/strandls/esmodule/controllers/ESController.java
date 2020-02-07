@@ -658,7 +658,7 @@ public class ESController {
 		
 		index= utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
 				elasticSearchService.getTopUsers(index, type, sortingValue, Integer.parseInt(topUser));
 		return Response.status(Status.OK).entity(records).build();
 	}
@@ -675,7 +675,7 @@ public class ESController {
 		
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
+		List< LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
 				elasticSearchService.getUserScore(index, type, Integer.parseInt(authorId));
 		
 		return Response.status(Status.OK).entity(records).build();
