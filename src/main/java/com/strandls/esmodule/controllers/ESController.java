@@ -656,6 +656,8 @@ public class ESController {
 			@DefaultValue("er")@PathParam("type") String type, @DefaultValue("") @QueryParam("value")String sortingValue,
 			@DefaultValue("20")@QueryParam("how_many")String topUser){
 		
+		if(sortingValue.isEmpty())
+			sortingValue=null;
 		index= utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
