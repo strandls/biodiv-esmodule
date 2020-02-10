@@ -653,7 +653,7 @@ public class ESController {
 	response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response topUsers(@DefaultValue("eaf")@PathParam("index") String index, 
-			@DefaultValue("er")@PathParam("type") String type, @QueryParam("value")String sortingValue,
+			@DefaultValue("er")@PathParam("type") String type, @DefaultValue("") @QueryParam("value")String sortingValue,
 			@DefaultValue("20")@QueryParam("how_many")String topUser){
 		
 		index= utilityMethods.getEsIndexConstants(index);
