@@ -11,13 +11,16 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.binning.servicesImpl.BinningModule;
 import com.strandls.esmodule.controllers.ESControllerModule;
 import com.strandls.esmodule.services.impl.ESServiceImplModule;
+import com.strandls.esmodule.utils.UtilityMethods;
 import com.sun.jersey.guice.JerseyServletModule;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 
@@ -39,12 +42,17 @@ public class ESModuleServeletContextListener extends GuiceServletContextListener
 				ElasticSearchClient esClient = new ElasticSearchClient(
 						RestClient.builder(HttpHost.create(ESmoduleConfig.getString("es.url"))));
 				bind(ElasticSearchClient.class).toInstance(esClient);
-				
+
+				ObjectMapper objectMapper = new ObjectMapper();
+				bind(ObjectMapper.class).toInstance(objectMapper);
+
+				bind(UtilityMethods.class).in(Scopes.SINGLETON);
+
 				Map<String, String> props = new HashMap<String, String>();
 				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
-				serve("/api/*").with(GuiceContainer.class,props);
+				serve("/api/*").with(GuiceContainer.class, props);
 			}
 		}, new ESControllerModule(), new ESServiceImplModule(), new BinningModule());
 

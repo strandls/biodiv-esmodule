@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.Strings;
@@ -57,7 +58,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * @see com.strandls.naksha.es.services.api.ElasticAdminSearchService#getMapping(java.lang.String)
@@ -89,6 +90,21 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 		logger.info("Created index: {} with status: {}", index, status);
 
+		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
+	}
+
+	@Override
+	public MapQueryResponse esPostMapping(String index,String mapping) throws IOException {
+		logger.info("Trying to add mapping to index: {}", index);
+		
+		StringEntity entity = null;
+		if (!Strings.isNullOrEmpty(mapping)) {
+			entity = new StringEntity(mapping, ContentType.APPLICATION_JSON);
+		}
+		Response response = client.performRequest("PUT", index+"/", new HashMap<>(), entity);
+		String status = response.getStatusLine().getReasonPhrase();
+		
+		logger.info("Added mapping to index: {} with status: {}", index, status);
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
 }

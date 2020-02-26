@@ -2,16 +2,24 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket;
+import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +38,7 @@ import com.strandls.esmodule.services.ElasticSearchGeoService;
 public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 	private final Logger logger = LoggerFactory.getLogger(ElasticSearchGeoServiceImpl.class);
-	
+
 	@Inject
 	private ElasticSearchClient client;
 
@@ -41,21 +49,21 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		sourceBuilder.query(query);
 		sourceBuilder.from(0);
 		sourceBuilder.size(500);
-		
+
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
-		SearchResponse searchResponse = client.search(searchRequest);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		List<MapDocument> result = new ArrayList<>();
 
 		long totalHits = searchResponse.getHits().getTotalHits();
-	
+
 		for (SearchHit hit : searchResponse.getHits().getHits())
 			result.add(new MapDocument(hit.getSourceAsString()));
 
 		logger.info("Search completed with total hits: {}", totalHits);
-		
+
 		return new MapResponse(result, totalHits, null);
 	}
 
@@ -75,6 +83,41 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 				right);
 
 		return querySearch(index, type, query);
+	}
+
+	@Override
+	public Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision,
+			Double top, Double left, Double bottom, Double right) throws IOException {
+
+		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
+
+		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
+				.precision(precision);
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+		if (top != null && left != null && bottom != null && right != null)
+			searchSourceBuilder.query(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
+
+		searchSourceBuilder.aggregation(aggregationBuilder);
+
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		searchRequest.source(searchSourceBuilder);
+
+		try {
+			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+			Aggregations aggregations = searchResponse.getAggregations();
+			ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
+
+			Map<String, Long> hashToCount = new HashMap<String, Long>();
+			for (Bucket b : geoHashGrid.getBuckets()) {
+				hashToCount.put(b.getKeyAsString(), b.getDocCount());
+			}
+			return hashToCount;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 }

@@ -26,9 +26,15 @@ public class ApiConstants {
 	public static final String SEARCH = "/search";
 	public static final String DOWNLOAD = "/download";
 	public static final String MAPPING = "/mapping";
+	public static final String ESMAPPING = "/createindex";
 	public static final String INDEX_ADMIN = "/index-admin";
 	public static final String RIGHTPAN = "/rightpan";
 	public static final String NEARBY = "/nearby";
+	public static final String AUTOSUGGEST = "/suggest";
+	public static final String MATCHPHRASE = "/exactmatch";
+	public static final String AutoComplete = "/auto-complete";
+	public static final String GetTopUsers="/leaderboard";
+	public static final String GetUserScore="/userscore";
 
 	// binning Controller
 	public static final String BINNING = "/binning";

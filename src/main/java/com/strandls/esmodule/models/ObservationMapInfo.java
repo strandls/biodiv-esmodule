@@ -10,17 +10,27 @@ package com.strandls.esmodule.models;
 public class ObservationMapInfo {
 
 	private Long id;
+	private String name;
 	private Double latitude;
 	private Double longitude;
 
 	/**
+	 * 
+	 */
+	public ObservationMapInfo() {
+		super();
+	}
+
+	/**
 	 * @param id
+	 * @param name
 	 * @param latitude
 	 * @param longitude
 	 */
-	public ObservationMapInfo(Long id, Double latitude, Double longitude) {
+	public ObservationMapInfo(Long id, String name, Double latitude, Double longitude) {
 		super();
 		this.id = id;
+		this.name = name;
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}
@@ -31,6 +41,14 @@ public class ObservationMapInfo {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public Double getLatitude() {

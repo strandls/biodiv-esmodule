@@ -1,11 +1,13 @@
 package com.strandls.esmodule.controllers;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -24,6 +26,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
+import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
+import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
@@ -40,6 +44,7 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
+import com.strandls.esmodule.utils.UtilityMethods;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -65,6 +70,9 @@ public class ESController {
 
 	@Inject
 	public ElasticSearchDownloadService elasticSearchDownloadService;
+
+	@Inject
+	public UtilityMethods utilityMethods;
 
 	@GET
 	@Path(ApiConstants.PING)
@@ -158,7 +166,6 @@ public class ESController {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
-
 	}
 
 	@POST
@@ -530,6 +537,7 @@ public class ESController {
 
 	@POST
 	@Path(ApiConstants.INDEX_ADMIN + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Create Index", notes = "Returns Success Failure", response = MapQueryResponse.class)
@@ -539,11 +547,143 @@ public class ESController {
 
 		try {
 			return elasticAdminSearchService.createIndex(index, type);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
+	}
+
+	@POST
+	@Path(ApiConstants.ESMAPPING + "/{index}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Post Mapping of Document to ES", notes = "Returns Success Failure", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
+	public Response esPostMapping(@PathParam("index") String index) {
+		try {
+			MapQueryResponse response = null;
+			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
+			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
+			return Response.status(Status.OK).entity(response.getMessage()).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "AutoCompletion", notes = "Returns Success Failure", response = ElasticIndexes.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response autoCompletion(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("field") String field, @QueryParam("text") String fieldText,
+			@QueryParam("groupId") String filterField, @QueryParam("group") Integer filter) {
+
+		String elasticIndex = utilityMethods.getEsIndexConstants(index);
+		String elasticType = utilityMethods.getEsIndexTypeConstant(type);
+
+		try {
+			List<? extends ElasticIndexes> records = null;
+			if (filter == null) {
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText,
+						utilityMethods.getClass(index));
+			} else {
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField,
+						filter, utilityMethods.getClass(index));
+			}
+			if (index.equals("etdi")) {
+				if (field.equals("name")) {
+					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
+				} else if (field.equals("common_name")) {
+					records = utilityMethods.rankDocumentBasedOnCommonName((List<ExtendedTaxonDefinition>) records,
+							filterField, fieldText);
+				}
+			}
+			return Response.status(Status.OK).entity(records).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@GET
+	@Path(ApiConstants.MATCHPHRASE + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response matchPhrase(@DefaultValue("etdi") @PathParam("index") String index,
+			@DefaultValue("er") @PathParam("type") String type,
+			@DefaultValue("name") @QueryParam("scientificField") String scientificField,
+			@QueryParam("scientificText") String scientificText,
+			@DefaultValue("canonical_form") @QueryParam("canonicalField") String canonicalField,
+			@QueryParam("canonicalText") String canonicalText) {
+
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+
+		try {
+			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField,
+					scientificText, canonicalField, canonicalText);
+			if (records != null && records.size() > 1) {
+				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
+				return Response.status(Status.OK).entity(records.get(0)).build();
+			}
+			return Response.status(Status.OK).entity(records.get(0)).build();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.GetTopUsers + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
+			@DefaultValue("er") @PathParam("type") String type,
+			@DefaultValue("") @QueryParam("value") String sortingValue,
+			@DefaultValue("20") @QueryParam("how_many") String topUser) {
+
+		if (sortingValue.isEmpty())
+			sortingValue = null;
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
+				type, sortingValue, Integer.parseInt(topUser));
+		return Response.status(Status.OK).entity(records).build();
+	}
+
+	@GET
+	@Path(ApiConstants.GetUserScore)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
+			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId) {
+
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+				type, Integer.parseInt(authorId));
+
+		return Response.status(Status.OK).entity(records).build();
 	}
 
 }
