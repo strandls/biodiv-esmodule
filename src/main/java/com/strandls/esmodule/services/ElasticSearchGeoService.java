@@ -13,6 +13,11 @@ import com.strandls.esmodule.models.MapResponse;
  */
 public interface ElasticSearchGeoService {
 
+	public static final Double LAT_MIN = -90.0;
+	public static final Double LAT_MAX = 90.0;
+	public static final Double LON_MIN = -180.0;
+	public static final Double LON_MAX = 180.0;
+	
 	/**
 	 * Get documents within geo boundary specified by top, left, bottom and right
 	 * 
@@ -43,7 +48,6 @@ public interface ElasticSearchGeoService {
 	 * @return {@link MapResponse}
 	 * @throws IOException @{@link IOException}
 	 */
-	Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision, Double top,
-			Double left, Double bottom, Double right) throws IOException;
-
+	Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision, Double top, Double left,
+			Double bottom, Double right, Long speciesId) throws IOException;
 }
