@@ -40,8 +40,10 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.missing.Missing;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
@@ -63,6 +65,7 @@ import com.google.inject.Inject;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapQueryStatus;
@@ -484,11 +487,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		// logger.info(masterBoolQuery.toString());
 
 		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
-
 		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
 		AggregationResponse aggregationResponse = new AggregationResponse();
 
-		if (filter.equals("name") || filter.equals("status")) {
+		if (filter.equals("max_voted_reco") || filter.equals("max_voted_reco.taxonstatus")) {
 			AggregationResponse temp = null;
 			aggregation = AggregationBuilders.filter("available", QueryBuilders.existsQuery(filter));
 			temp = groupAggregation(index, type, aggregation, masterBoolQuery, filter);
@@ -496,7 +498,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			for (Map.Entry<Object, Long> entry : temp.getGroupAggregation().entrySet()) {
 				t.put(entry.getKey(), entry.getValue());
 			}
-			aggregation = AggregationBuilders.missing("miss").field(filter.concat(".keyword"));
+			if (filter.equals("max_voted_reco"))
+				aggregation = AggregationBuilders.missing("miss").field(filter.concat(".id"));
+			if (filter.equals("max_voted_reco.taxonstatus"))
+				aggregation = AggregationBuilders.missing("miss").field(filter.concat(".keyword"));
 			temp = groupAggregation(index, type, aggregation, masterBoolQuery, filter);
 			for (Map.Entry<Object, Long> entry : temp.getGroupAggregation().entrySet()) {
 				t.put(entry.getKey(), entry.getValue());
@@ -652,7 +657,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
-		if (filter.equals("name") || filter.equals("status")) {
+		if (filter.equals("max_voted_reco.taxonstatus") || filter.equals("max_voted_reco")) {
 			Filter filterAgg = response.getAggregations().get("available");
 			if (filterAgg != null) {
 				groupMonth.put("available", filterAgg.getDocCount());
@@ -889,8 +894,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index,
-			String type, Integer authorId) {
+	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
+			Integer authorId) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
 		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId));
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -914,8 +919,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index,
-			String type, String sortingValue, Integer topUser) {
+	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
+			String sortingValue, Integer topUser) {
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
@@ -1054,21 +1059,16 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			SearchResponse searchResponse) {
 //		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
 //				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
-		
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
 
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
 		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
 
 		for (Bucket authorBucket : authorBuckets) {
-			LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>> userRecord = 
-					new LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>();
 
 			Terms moduleTerms = authorBucket.getAggregations().get("bucket_by_module");
 			Collection<? extends Bucket> moduleBuckets = moduleTerms.getBuckets();
-			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = 
-					new LinkedHashMap<String, LinkedHashMap<String, String>>();
+			LinkedHashMap<String, LinkedHashMap<String, String>> moduleRecords = new LinkedHashMap<String, LinkedHashMap<String, String>>();
 
 			for (Bucket moduleBucket : moduleBuckets) {
 				Terms activityTerms = moduleBucket.getAggregations().get("bucket_by_activity_category");
@@ -1076,7 +1076,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				LinkedHashMap<String, String> activities = new LinkedHashMap<String, String>();
 
 				for (Bucket activityBucket : activityBuckets) {
-					activities.put(activityBucket.getKeyAsString().toLowerCase(), String.valueOf(activityBucket.getDocCount()));
+					activities.put(activityBucket.getKeyAsString().toLowerCase(),
+							String.valueOf(activityBucket.getDocCount()));
 				}
 				moduleRecords.put(moduleBucket.getKeyAsString().toLowerCase(), activities);
 			}
@@ -1095,10 +1096,90 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
 
 			moduleRecords.put("details", userDetails);
-			//userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
+			// userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
 			records.add(moduleRecords);
 		}
 		return records;
+	}
+
+	@Override
+	public GeoHashAggregationData getNewGeoAggregation(String index, String type, MapSearchQuery searchQuery,
+			String geoAggregationField, Integer geoAggegationPrecision) {
+
+		GeoHashAggregationData geoHashAggData = null;
+
+		try {
+			MapSearchParams searchParams = searchQuery.getSearchParams();
+			BoolQueryBuilder masterBoolQuery = getBoolQueryBuilder(searchQuery);
+
+			GeoGridAggregationBuilder geoGridAggregationBuilder = getGeoGridAggregationBuilder(geoAggregationField,
+					geoAggegationPrecision);
+
+			applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			if (masterBoolQuery != null)
+				sourceBuilder.query(masterBoolQuery);
+			sourceBuilder.aggregation(geoGridAggregationBuilder);
+
+			SearchRequest searchRequest = new SearchRequest(index);
+			searchRequest.types(type);
+			searchRequest.source(sourceBuilder);
+			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+			Long totalCount = searchResponse.getHits().getTotalHits();
+			Map<String, Long> geoHashData = new HashMap<String, Long>();
+
+			Aggregations aggregations = searchResponse.getAggregations();
+			ParsedGeoHashGrid geoHashGrid = aggregations.get("location-1");
+
+			for (org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket b : geoHashGrid.getBuckets()) {
+				geoHashData.put(b.getKeyAsString(), b.getDocCount());
+			}
+
+			geoHashAggData = new GeoHashAggregationData(geoHashData, totalCount);
+
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
+
+		return geoHashAggData;
+	}
+
+	@Override
+	public void getListPanel(String index, String type) {
+		try {
+
+			AggregationBuilder speciesGroupAggregation = termsAggregation("speciesGroup", "group_name.keyword");
+
+			AggregationBuilder userGroupAgregation = termsAggregation("userGroup",
+					"user_group_observations.name.keyword");
+			AggregationBuilder rankAggregation = termsAggregation("rankAggregation", "max_voted_reco.ranktext.keyword");
+			AggregationBuilder stateAggregation = termsAggregation("stateAggregation",
+					"location_information.state.keyword");
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.aggregation(speciesGroupAggregation);
+			sourceBuilder.aggregation(userGroupAgregation);
+			sourceBuilder.aggregation(rankAggregation);
+			sourceBuilder.aggregation(stateAggregation);
+
+			SearchRequest request = new SearchRequest(index);
+			request.types(type);
+			request.source(sourceBuilder);
+
+			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+			Terms result = response.getAggregations().get("speciesGroup");
+			Terms result1 = response.getAggregations().get("userGroup");
+			List<String> resultList = new ArrayList<String>();
+			for (Terms.Bucket b : result.getBuckets()) {
+				resultList.add(b.getKeyAsString());
+			}
+			System.out.println(result1.toString());
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+
 	}
 
 }
