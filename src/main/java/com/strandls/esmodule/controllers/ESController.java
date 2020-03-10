@@ -28,7 +28,9 @@ import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
+import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
@@ -714,7 +716,7 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
 			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId) {
@@ -723,8 +725,9 @@ public class ESController {
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
 				type, Integer.parseInt(authorId));
-
-		return Response.status(Status.OK).entity(records).build();
+		UserScore record = new UserScore();
+		record.setRecord(records);
+		return Response.status(Status.OK).entity(record).build();
 	}
 
 	@GET
@@ -732,10 +735,17 @@ public class ESController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	public Response getFilterLists(@PathParam("index") String index, @PathParam("type") String type) {
+	@ApiOperation(value = "Get all the dynamic filters", notes = "Return all the filter", response = FilterPanelData.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the data", response = String.class) })
 
-		elasticSearchService.getListPanel(index, type);
-		return null;
+	public Response getFilterLists(@PathParam("index") String index, @PathParam("type") String type) {
+		try {
+			FilterPanelData result = elasticSearchService.getListPanel(index, type);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 
 	}
 

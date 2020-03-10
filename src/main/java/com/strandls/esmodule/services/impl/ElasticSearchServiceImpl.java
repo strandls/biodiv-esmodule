@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -41,6 +42,7 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
@@ -65,6 +67,7 @@ import com.google.inject.Inject;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -1130,7 +1133,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			Map<String, Long> geoHashData = new HashMap<String, Long>();
 
 			Aggregations aggregations = searchResponse.getAggregations();
-			ParsedGeoHashGrid geoHashGrid = aggregations.get("location-1");
+			ParsedGeoHashGrid geoHashGrid = aggregations.get(geoAggregationField + "-" + geoAggegationPrecision);
 
 			for (org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket b : geoHashGrid.getBuckets()) {
 				geoHashData.put(b.getKeyAsString(), b.getDocCount());
@@ -1146,21 +1149,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public void getListPanel(String index, String type) {
+	public FilterPanelData getListPanel(String index, String type) {
 		try {
 
-			AggregationBuilder speciesGroupAggregation = termsAggregation("speciesGroup", "group_name.keyword");
+			AggregationBuilder speciesGroupAggregation = AggregationBuilders.terms("speciesGroup")
+					.field("group_name.keyword").size(100).order(BucketOrder.key(true));
 
-			AggregationBuilder userGroupAgregation = termsAggregation("userGroup",
-					"user_group_observations.name.keyword");
-			AggregationBuilder rankAggregation = termsAggregation("rankAggregation", "max_voted_reco.ranktext.keyword");
-			AggregationBuilder stateAggregation = termsAggregation("stateAggregation",
-					"location_information.state.keyword");
+			AggregationBuilder userGroupAgregation = AggregationBuilders.terms("userGroup")
+					.field("user_group_observations.name.keyword").size(100).order(BucketOrder.key(true));
+			AggregationBuilder stateAggregation = AggregationBuilders.terms("state")
+					.field("location_information.state.keyword").size(100).order(BucketOrder.key(true));
+
+			AggregationBuilder traitAggregation = AggregationBuilders.terms("trait")
+					.field("facts.trait_value.trait_aggregation_field.keyword").size(100).order(BucketOrder.key(true));
 
 			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 			sourceBuilder.aggregation(speciesGroupAggregation);
 			sourceBuilder.aggregation(userGroupAgregation);
-			sourceBuilder.aggregation(rankAggregation);
+			sourceBuilder.aggregation(traitAggregation);
 			sourceBuilder.aggregation(stateAggregation);
 
 			SearchRequest request = new SearchRequest(index);
@@ -1168,18 +1174,43 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			request.source(sourceBuilder);
 
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
-			Terms result = response.getAggregations().get("speciesGroup");
-			Terms result1 = response.getAggregations().get("userGroup");
-			List<String> resultList = new ArrayList<String>();
-			for (Terms.Bucket b : result.getBuckets()) {
-				resultList.add(b.getKeyAsString());
-			}
-			System.out.println(result1.toString());
+			FilterPanelData filterPanel = new FilterPanelData();
 
+			filterPanel.setSpeciesGroup(getAggregationList(response.getAggregations().get("speciesGroup")));
+			filterPanel.setStates(getAggregationList(response.getAggregations().get("state")));
+			filterPanel.setUserGroup(getAggregationList(response.getAggregations().get("userGroup")));
+			filterPanel.setTraits(getAggregationMap(response.getAggregations().get("trait")));
+			return filterPanel;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
+		return null;
 
+	}
+
+	private List<String> getAggregationList(Terms terms) {
+		List<String> resultList = new ArrayList<String>();
+		for (Terms.Bucket b : terms.getBuckets()) {
+			resultList.add(b.getKeyAsString());
+		}
+		return resultList;
+	}
+
+	private Map<String, List<String>> getAggregationMap(Terms terms) {
+		Map<String, List<String>> resultMap = new TreeMap<String, List<String>>();
+		for (Terms.Bucket b : terms.getBuckets()) {
+			String[] keyValue = b.getKeyAsString().split("\\.");
+			if (resultMap.containsKey(keyValue[0])) {
+				List<String> values = resultMap.get(keyValue[0]);
+				values.add(keyValue[1]);
+				resultMap.put(keyValue[0], values);
+			} else {
+				List<String> values = new ArrayList<String>();
+				values.add(keyValue[1]);
+				resultMap.put(keyValue[0], values);
+			}
+		}
+		return resultMap;
 	}
 
 }

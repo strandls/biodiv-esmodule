@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -290,6 +291,6 @@ public interface ElasticSearchService {
 	GeoHashAggregationData getNewGeoAggregation(String index, String type, MapSearchQuery query,
 			String geoAggregationField, Integer geoAggegationPrecision);
 
-	public void getListPanel(String index,String type);
+	public FilterPanelData getListPanel(String index, String type);
 
 }
