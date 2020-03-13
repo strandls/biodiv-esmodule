@@ -178,7 +178,7 @@ public class ElasticSearchQueryUtil {
 	
 	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
 		
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("maxvotedrecoid", maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
 		return masterBoolQueryBuilder;
 	}
 	

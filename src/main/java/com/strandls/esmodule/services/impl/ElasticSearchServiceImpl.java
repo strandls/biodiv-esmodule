@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -67,18 +68,24 @@ import com.google.inject.Inject;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.CustomFieldValues;
+import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapQueryStatus;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
+import com.strandls.esmodule.models.MaxVotedReco;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationMapInfo;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.SimilarObservation;
+import com.strandls.esmodule.models.TraitValue;
+import com.strandls.esmodule.models.Traits;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -685,13 +692,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	public ObservationInfo getObservationRightPan(String index, String type, String maxVotedRecoId) throws IOException {
 
 		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(maxVotedRecoId);
-		AggregationBuilder aggregation = AggregationBuilders.terms("frommonth").field("frommonth").size(1000);
+		AggregationBuilder aggregation = AggregationBuilders.terms("observed_in_month")
+				.field("observed_in_month.keyword").size(1000);
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.query(masterBoolQuery);
 		sourceBuilder.aggregation(aggregation);
 		sourceBuilder.size(1000);
-		String[] includes = { "id", "thumbnail", "name", "latitude", "longitude" };
+		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -705,16 +713,20 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		for (SearchHit hit : response.getHits().getHits()) {
 
-			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
-					String.valueOf(hit.getSourceAsMap().get("name")),
-					Double.parseDouble(hit.getSourceAsMap().get("latitude").toString()),
-					Double.parseDouble(hit.getSourceAsMap().get("longitude").toString())));
-			similarObservation.add(new SimilarObservation(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
-					String.valueOf(hit.getSourceAsMap().get("name")),
-					String.valueOf(hit.getSourceAsMap().get("thumbnail"))));
+			Location loc = objectMapper.readValue(objectMapper.writeValueAsString(hit.getSourceAsMap().get("location")),
+					Location.class);
+			MaxVotedReco maxVotedReco = objectMapper.readValue(
+					objectMapper.writeValueAsString(hit.getSourceAsMap().get("max_voted_reco")), MaxVotedReco.class);
+
+			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
+					maxVotedReco.getScientific_name(), loc.getLat(), loc.getLon()));
+
+			similarObservation.add(new SimilarObservation(
+					Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
+					maxVotedReco.getScientific_name(), String.valueOf(hit.getSourceAsMap().get("repr_image_url"))));
 		}
 		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
-		Terms frommonth = response.getAggregations().get("frommonth");
+		Terms frommonth = response.getAggregations().get("observed_in_month");
 		for (Terms.Bucket entry : frommonth.getBuckets()) {
 			groupMonth.put(entry.getKey(), entry.getDocCount());
 		}
@@ -731,7 +743,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.query(geoDistanceQuery);
 		sourceBuilder.size(15);
-		String[] includes = { "id", "thumbnail", "name", "latitude", "longitude" };
+		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -745,13 +757,19 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		Double distance = 0.0, lat2 = 0.0, lon2 = 0.0;
 		for (SearchHit hit : response.getHits().getHits()) {
 
-			lat2 = Double.parseDouble(hit.getSourceAsMap().get("latitude").toString());
-			lon2 = Double.parseDouble(hit.getSourceAsMap().get("longitude").toString());
+			Location loc = objectMapper.readValue(objectMapper.writeValueAsString(hit.getSourceAsMap().get("location")),
+					Location.class);
+
+			MaxVotedReco maxVotedReco = objectMapper.readValue(
+					objectMapper.writeValueAsString(hit.getSourceAsMap().get("max_voted_reco")), MaxVotedReco.class);
+
+			lat2 = loc.getLat();
+			lon2 = loc.getLon();
 			distance = distanceCalculate(lat, Lon, lat2, lon2);
 
 			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
-					String.valueOf(hit.getSourceAsMap().get("name")),
-					String.valueOf(hit.getSourceAsMap().get("thumbnail")), distance));
+					maxVotedReco.getScientific_name(), String.valueOf(hit.getSourceAsMap().get("repr_image_url")),
+					distance));
 
 		}
 
@@ -1154,20 +1172,22 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			AggregationBuilder speciesGroupAggregation = AggregationBuilders.terms("speciesGroup")
 					.field("group_name.keyword").size(100).order(BucketOrder.key(true));
-
 			AggregationBuilder userGroupAgregation = AggregationBuilders.terms("userGroup")
 					.field("user_group_observations.name.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder stateAggregation = AggregationBuilders.terms("state")
 					.field("location_information.state.keyword").size(100).order(BucketOrder.key(true));
-
 			AggregationBuilder traitAggregation = AggregationBuilders.terms("trait")
-					.field("facts.trait_value.trait_aggregation_field.keyword").size(100).order(BucketOrder.key(true));
+					.field("facts.trait_value.trait_filter.keyword").size(1000).order(BucketOrder.key(true));
+			AggregationBuilder cfAggregation = AggregationBuilders.terms("customField")
+					.field("custom_fields.custom_field.custom_field_values.custom_field_filter.keyword").size(1000)
+					.order(BucketOrder.key(true));
 
 			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 			sourceBuilder.aggregation(speciesGroupAggregation);
 			sourceBuilder.aggregation(userGroupAgregation);
 			sourceBuilder.aggregation(traitAggregation);
 			sourceBuilder.aggregation(stateAggregation);
+			sourceBuilder.aggregation(cfAggregation);
 
 			SearchRequest request = new SearchRequest(index);
 			request.types(type);
@@ -1179,7 +1199,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			filterPanel.setSpeciesGroup(getAggregationList(response.getAggregations().get("speciesGroup")));
 			filterPanel.setStates(getAggregationList(response.getAggregations().get("state")));
 			filterPanel.setUserGroup(getAggregationList(response.getAggregations().get("userGroup")));
-			filterPanel.setTraits(getAggregationMap(response.getAggregations().get("trait")));
+			filterPanel.setTraits(getTraits(response.getAggregations().get("trait")));
+			filterPanel.setCustomFields(getCustomFields(response.getAggregations().get("customField")));
 			return filterPanel;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -1196,21 +1217,69 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return resultList;
 	}
 
-	private Map<String, List<String>> getAggregationMap(Terms terms) {
-		Map<String, List<String>> resultMap = new TreeMap<String, List<String>>();
+	private List<Traits> getTraits(Terms terms) {
+		Map<Long, Traits> traitMap = new TreeMap<Long, Traits>();
+		List<Traits> traits = new ArrayList<Traits>();
 		for (Terms.Bucket b : terms.getBuckets()) {
-			String[] keyValue = b.getKeyAsString().split("\\.");
-			if (resultMap.containsKey(keyValue[0])) {
-				List<String> values = resultMap.get(keyValue[0]);
-				values.add(keyValue[1]);
-				resultMap.put(keyValue[0], values);
+			String[] traitArray = b.getKeyAsString().split("\\|");
+//			pattern = traitID | traitName | traitType | traitValue | TraitValueIconURL
+
+			if (traitMap.containsKey(Long.parseLong(traitArray[0]))) {
+				Traits traitMapped = traitMap.get(Long.parseLong(traitArray[0]));
+				List<TraitValue> valueList = traitMapped.getTraitValues();
+				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				traitMapped.setTraitValues(valueList);
+				traitMap.put(Long.parseLong(traitArray[0]), traitMapped);
 			} else {
-				List<String> values = new ArrayList<String>();
-				values.add(keyValue[1]);
-				resultMap.put(keyValue[0], values);
+				List<TraitValue> valueList = new ArrayList<TraitValue>();
+				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				Traits traitsMapped = new Traits(Long.parseLong(traitArray[0]), traitArray[1], traitArray[2],
+						valueList);
+
+				traitMap.put(Long.parseLong(traitArray[0]), traitsMapped);
+			}
+
+		}
+		for (Entry<Long, Traits> entry : traitMap.entrySet()) {
+			traits.add(entry.getValue());
+		}
+		return traits;
+	}
+
+	private List<CustomFields> getCustomFields(Terms terms) {
+		Map<Long, CustomFields> customFieldMap = new TreeMap<Long, CustomFields>();
+		List<CustomFields> customFieldList = new ArrayList<CustomFields>();
+
+		for (Terms.Bucket b : terms.getBuckets()) {
+			String customFieldArray[] = b.getKeyAsString().split("\\|");
+//			pattern  = cfId | cfName | cfFieldType | cfDataType | cfValueIcon |cfValue
+
+			if (customFieldMap.containsKey(Long.parseLong(customFieldArray[0]))) {
+
+				CustomFields customFieldMapped = customFieldMap.get(Long.parseLong(customFieldArray[0]));
+				List<CustomFieldValues> valueList = customFieldMapped.getValues();
+				if (!customFieldArray[2].equalsIgnoreCase("FIELD TEXT")) {
+					valueList.add(new CustomFieldValues(customFieldArray[4], customFieldArray[3]));
+				}
+				customFieldMapped.setValues(valueList);
+				customFieldMap.put(Long.parseLong(customFieldArray[0]), customFieldMapped);
+
+			} else {
+				List<CustomFieldValues> values = null;
+				if (!customFieldArray[2].equalsIgnoreCase("FIELD TEXT")) {
+					values = new ArrayList<CustomFieldValues>();
+					values.add(new CustomFieldValues(customFieldArray[4], customFieldArray[3]));
+				}
+				CustomFields customFieldMapped = new CustomFields(Long.parseLong(customFieldArray[0]),
+						customFieldArray[1], customFieldArray[2], customFieldArray[3], values);
+				customFieldMap.put(Long.parseLong(customFieldArray[0]), customFieldMapped);
 			}
 		}
-		return resultMap;
+		for (Entry<Long, CustomFields> entry : customFieldMap.entrySet()) {
+			customFieldList.add(entry.getValue());
+		}
+
+		return customFieldList;
 	}
 
 }
