@@ -767,7 +767,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			lon2 = loc.getLon();
 			distance = distanceCalculate(lat, Lon, lat2, lon2);
 
-			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("id").toString()),
+			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
 					maxVotedReco.getScientific_name(), String.valueOf(hit.getSourceAsMap().get("repr_image_url")),
 					distance));
 
