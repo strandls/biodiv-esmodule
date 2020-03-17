@@ -718,6 +718,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			MaxVotedReco maxVotedReco = objectMapper.readValue(
 					objectMapper.writeValueAsString(hit.getSourceAsMap().get("max_voted_reco")), MaxVotedReco.class);
 
+			if (maxVotedReco == null)
+				maxVotedReco = new MaxVotedReco();
+
 			latlon.add(new ObservationMapInfo(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
 					maxVotedReco.getScientific_name(), loc.getLat(), loc.getLon()));
 
@@ -762,6 +765,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			MaxVotedReco maxVotedReco = objectMapper.readValue(
 					objectMapper.writeValueAsString(hit.getSourceAsMap().get("max_voted_reco")), MaxVotedReco.class);
+			if (maxVotedReco == null)
+				maxVotedReco = new MaxVotedReco();
 
 			lat2 = loc.getLat();
 			lon2 = loc.getLon();
