@@ -84,8 +84,10 @@ import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationMapInfo;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.SimilarObservation;
+import com.strandls.esmodule.models.SpeciesGroup;
 import com.strandls.esmodule.models.TraitValue;
 import com.strandls.esmodule.models.Traits;
+import com.strandls.esmodule.models.UserGroup;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -1176,9 +1178,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		try {
 
 			AggregationBuilder speciesGroupAggregation = AggregationBuilders.terms("speciesGroup")
-					.field("group_name.keyword").size(100).order(BucketOrder.key(true));
+					.field("sgroup_filter.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder userGroupAgregation = AggregationBuilders.terms("userGroup")
-					.field("user_group_observations.name.keyword").size(100).order(BucketOrder.key(true));
+					.field("user_group_observations.ug_filter.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder stateAggregation = AggregationBuilders.terms("state")
 					.field("location_information.state.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder traitAggregation = AggregationBuilders.terms("trait")
@@ -1201,9 +1203,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 			FilterPanelData filterPanel = new FilterPanelData();
 
-			filterPanel.setSpeciesGroup(getAggregationList(response.getAggregations().get("speciesGroup")));
+			filterPanel.setSpeciesGroup(getAggregationSpeciesGroup(response.getAggregations().get("speciesGroup")));
 			filterPanel.setStates(getAggregationList(response.getAggregations().get("state")));
-			filterPanel.setUserGroup(getAggregationList(response.getAggregations().get("userGroup")));
+			filterPanel.setUserGroup(getAggregationUserGroup(response.getAggregations().get("userGroup")));
 			filterPanel.setTraits(getTraits(response.getAggregations().get("trait")));
 			filterPanel.setCustomFields(getCustomFields(response.getAggregations().get("customField")));
 			return filterPanel;
@@ -1220,6 +1222,26 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			resultList.add(b.getKeyAsString());
 		}
 		return resultList;
+	}
+
+	private List<SpeciesGroup> getAggregationSpeciesGroup(Terms terms) {
+		List<SpeciesGroup> sGroup = new ArrayList<SpeciesGroup>();
+		for (Terms.Bucket b : terms.getBuckets()) {
+//			pattern = sgroupId | sgroupName
+			String[] sGroupArray = b.getKeyAsString().split("\\|");
+			sGroup.add(new SpeciesGroup(Long.parseLong(sGroupArray[0]), sGroupArray[1]));
+		}
+		return sGroup;
+	}
+
+	private List<UserGroup> getAggregationUserGroup(Terms terms) {
+		List<UserGroup> userGroup = new ArrayList<UserGroup>();
+		for (Terms.Bucket b : terms.getBuckets()) {
+//			pattern = usergroupId | userGroupName
+			String[] ugArray = b.getKeyAsString().split("\\|");
+			userGroup.add(new UserGroup(Long.parseLong(ugArray[0]), ugArray[1]));
+		}
+		return userGroup;
 	}
 
 	private List<Traits> getTraits(Terms terms) {

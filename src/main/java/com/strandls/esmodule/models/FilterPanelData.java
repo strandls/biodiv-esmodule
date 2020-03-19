@@ -11,8 +11,8 @@ import java.util.List;
  */
 public class FilterPanelData {
 
-	private List<String> speciesGroup;
-	private List<String> userGroup;
+	private List<SpeciesGroup> speciesGroup;
+	private List<UserGroup> userGroup;
 	private List<String> states;
 	private List<Traits> traits;
 	private List<CustomFields> customFields;
@@ -31,8 +31,8 @@ public class FilterPanelData {
 	 * @param traits
 	 * @param customFields
 	 */
-	public FilterPanelData(List<String> speciesGroup, List<String> userGroup, List<String> states, List<Traits> traits,
-			List<CustomFields> customFields) {
+	public FilterPanelData(List<SpeciesGroup> speciesGroup, List<UserGroup> userGroup, List<String> states,
+			List<Traits> traits, List<CustomFields> customFields) {
 		super();
 		this.speciesGroup = speciesGroup;
 		this.userGroup = userGroup;
@@ -41,19 +41,19 @@ public class FilterPanelData {
 		this.customFields = customFields;
 	}
 
-	public List<String> getSpeciesGroup() {
+	public List<SpeciesGroup> getSpeciesGroup() {
 		return speciesGroup;
 	}
 
-	public void setSpeciesGroup(List<String> speciesGroup) {
+	public void setSpeciesGroup(List<SpeciesGroup> speciesGroup) {
 		this.speciesGroup = speciesGroup;
 	}
 
-	public List<String> getUserGroup() {
+	public List<UserGroup> getUserGroup() {
 		return userGroup;
 	}
 
-	public void setUserGroup(List<String> userGroup) {
+	public void setUserGroup(List<UserGroup> userGroup) {
 		this.userGroup = userGroup;
 	}
 
