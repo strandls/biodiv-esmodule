@@ -10,6 +10,8 @@ package com.strandls.esmodule.models;
 public class UserGroup {
 
 	private Long id;
+	private String name;
+	private String webAddress;
 
 	/**
 	 * 
@@ -18,16 +20,16 @@ public class UserGroup {
 		super();
 	}
 
-	private String name;
-
 	/**
 	 * @param id
 	 * @param name
+	 * @param webAddress
 	 */
-	public UserGroup(Long id, String name) {
+	public UserGroup(Long id, String name, String webAddress) {
 		super();
 		this.id = id;
 		this.name = name;
+		this.webAddress = webAddress;
 	}
 
 	public Long getId() {
@@ -44,6 +46,14 @@ public class UserGroup {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public String getWebAddress() {
+		return webAddress;
+	}
+
+	public void setWebAddress(String webAddress) {
+		this.webAddress = webAddress;
 	}
 
 }

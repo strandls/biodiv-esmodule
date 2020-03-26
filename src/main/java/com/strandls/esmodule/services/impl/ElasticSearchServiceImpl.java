@@ -1180,7 +1180,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			AggregationBuilder speciesGroupAggregation = AggregationBuilders.terms("speciesGroup")
 					.field("sgroup_filter.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder userGroupAgregation = AggregationBuilders.terms("userGroup")
-					.field("user_group_observations.ug_filter.keyword").size(100).order(BucketOrder.key(true));
+					.field("user_group_observations.ug_filter.keyword").size(100).order(BucketOrder.count(true));
 			AggregationBuilder stateAggregation = AggregationBuilders.terms("state")
 					.field("location_information.state.keyword").size(100).order(BucketOrder.key(true));
 			AggregationBuilder traitAggregation = AggregationBuilders.terms("trait")
@@ -1237,9 +1237,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private List<UserGroup> getAggregationUserGroup(Terms terms) {
 		List<UserGroup> userGroup = new ArrayList<UserGroup>();
 		for (Terms.Bucket b : terms.getBuckets()) {
-//			pattern = usergroupId | userGroupName
+//			pattern = usergroupId | userGroupName |domain name | webaddress
 			String[] ugArray = b.getKeyAsString().split("\\|");
-			userGroup.add(new UserGroup(Long.parseLong(ugArray[0]), ugArray[1]));
+			String webAddress = "";
+			if (ugArray[2].length() != 0)
+				webAddress = ugArray[2];
+			else
+				webAddress = "/group/" + ugArray[3];
+			userGroup.add(new UserGroup(Long.parseLong(ugArray[0]), ugArray[1], webAddress));
 		}
 		return userGroup;
 	}
