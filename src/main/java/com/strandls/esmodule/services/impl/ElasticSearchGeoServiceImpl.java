@@ -11,9 +11,11 @@ import javax.inject.Inject;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -86,8 +88,9 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	}
 
 	@Override
+
 	public Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision,
-			Double top, Double left, Double bottom, Double right) throws IOException {
+			Double top, Double left, Double bottom, Double right, Long speciesId) throws IOException {
 
 		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
 
@@ -95,8 +98,24 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 				.precision(precision);
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-		if (top != null && left != null && bottom != null && right != null)
+		if (top != null && left != null && bottom != null && right != null) {
+
+			top = top < LAT_MIN || top > LAT_MAX ? Math.copySign(LAT_MAX, top) : top;
+			bottom = bottom < LAT_MIN || bottom > LAT_MAX ? Math.copySign(LAT_MAX, bottom) : bottom;
+
+			left = left < LON_MIN || left > LON_MAX ? Math.copySign(LON_MAX, left) : left;
+			right = right < LON_MIN || right > LON_MAX ? Math.copySign(LON_MAX, right) : right;
+
 			searchSourceBuilder.query(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
+		}
+
+		if (speciesId != null) {
+			BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+			TermQueryBuilder termQuery = QueryBuilders
+					.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
+			boolQuery.filter(termQuery);
+			searchSourceBuilder.query(boolQuery);
+		}
 
 		searchSourceBuilder.aggregation(aggregationBuilder);
 

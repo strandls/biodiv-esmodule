@@ -4,13 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.common.geo.GeoDistance;
 import org.elasticsearch.common.geo.GeoPoint;
-import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
-import org.elasticsearch.index.query.GeoDistanceQueryBuilder;
 import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -178,21 +175,8 @@ public class ElasticSearchQueryUtil {
 	
 	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
 		
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("maxvotedrecoid", maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
 		return masterBoolQueryBuilder;
-	}
-	
-	public BoolQueryBuilder getGeoDistance(Double lat , Double lon) {
-		BoolQueryBuilder masterqueryBuilder = QueryBuilders.boolQuery();
-		GeoDistanceQueryBuilder distanceFilter = QueryBuilders.geoDistanceQuery("location");
-		distanceFilter.distance(50.0, DistanceUnit.KILOMETERS);
-		distanceFilter.geoDistance(GeoDistance.PLANE);
-		distanceFilter.ignoreUnmapped(true);
-		distanceFilter.point(lat, lon);
-		masterqueryBuilder.must();
-		masterqueryBuilder.filter(distanceFilter);
-		
-		return masterqueryBuilder;
 	}
 
 	protected GeoGridAggregationBuilder getGeoGridAggregationBuilder(String field, Integer precision) {

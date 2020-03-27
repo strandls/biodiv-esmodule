@@ -33,8 +33,10 @@ public class ApiConstants {
 	public static final String AUTOSUGGEST = "/suggest";
 	public static final String MATCHPHRASE = "/exactmatch";
 	public static final String AutoComplete = "/auto-complete";
-	public static final String GetTopUsers="/leaderboard";
-	public static final String GetUserScore="/userscore";
+	public static final String GetTopUsers = "/leaderboard";
+	public static final String GetUserScore = "/userscore";
+	public static final String LIST = "/list";
+	public static final String FILTERS = "/filters";
 
 	// binning Controller
 	public static final String BINNING = "/binning";

@@ -28,7 +28,10 @@ import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
+import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapDocument;
@@ -434,6 +437,46 @@ public class ESController {
 	}
 
 	@POST
+	@Path(ApiConstants.SEARCH + ApiConstants.GEOHASH_AGGREGATION + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Calculate the geohash Aggregation based on the filter conditions", notes = "Returns the GeoHashAggregation in Key value pair", response = GeoHashAggregationData.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "Unable to retireve the data", response = String.class) })
+	public GeoHashAggregationData getGeoHashAggregation(@PathParam("index") String index,
+			@PathParam("type") String type, @QueryParam("geoAggregationField") String geoAggregationField,
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
+			@QueryParam("termsAggregationField") String termsAggregationField,
+			@ApiParam(name = "query") MapSearchQuery query) {
+
+		MapSearchParams searchParams = query.getSearchParams();
+		MapBoundParams boundParams = searchParams.getMapBoundParams();
+		MapBounds bounds = null;
+		if (boundParams != null)
+			bounds = boundParams.getBounds();
+
+		if (onlyFilteredAggregation != null && onlyFilteredAggregation && bounds == null)
+			throw new WebApplicationException(
+					Response.status(Status.BAD_REQUEST).entity("Bounds not specified for filtering").build());
+
+		if (bounds != null && geoAggregationField == null)
+			throw new WebApplicationException(
+					Response.status(Status.BAD_REQUEST).entity("Location field not specified for bounds").build());
+
+		try {
+			return elasticSearchService.getNewGeoAggregation(index, type, query, geoAggregationField,
+					geoAggegationPrecision);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@POST
 	@Path(ApiConstants.SEARCH + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -673,7 +716,7 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
 			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId) {
@@ -682,8 +725,28 @@ public class ESController {
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
 				type, Integer.parseInt(authorId));
+		UserScore record = new UserScore();
+		record.setRecord(records);
+		return Response.status(Status.OK).entity(record).build();
+	}
 
-		return Response.status(Status.OK).entity(records).build();
+	@GET
+	@Path(ApiConstants.FILTERS + ApiConstants.LIST + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Get all the dynamic filters", notes = "Return all the filter", response = FilterPanelData.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the data", response = String.class) })
+
+	public Response getFilterLists(@PathParam("index") String index, @PathParam("type") String type) {
+		try {
+			FilterPanelData result = elasticSearchService.getListPanel(index, type);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+
 	}
 
 }

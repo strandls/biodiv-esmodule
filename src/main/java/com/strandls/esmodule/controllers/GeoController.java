@@ -68,9 +68,9 @@ public class GeoController {
 	public Response getGeoAggregation(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("geoField") String geoField, @QueryParam("precision") Integer precision, 
 			@QueryParam("top") Double top, @QueryParam("left") Double left,
-			@QueryParam("bottom") Double bottom, @QueryParam("right") Double right) {
+			@QueryParam("bottom") Double bottom, @QueryParam("right") Double right, @QueryParam("speciesId") Long speciesId) {
 		try {
-			Map<String, Long> hashToDocCount = service.getGeoAggregation(index, type, geoField, precision, top, left, bottom, right); 
+			Map<String, Long> hashToDocCount = service.getGeoAggregation(index, type, geoField, precision, top, left, bottom, right, speciesId); 
 			return Response.ok().entity(hashToDocCount).build();
 		} catch (IOException e) {
 			throw new WebApplicationException(
