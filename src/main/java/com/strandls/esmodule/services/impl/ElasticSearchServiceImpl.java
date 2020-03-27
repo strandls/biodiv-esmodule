@@ -28,11 +28,14 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.geo.GeoDistance;
+import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.GeoValidationMethod;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -56,6 +59,8 @@ import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptP
 import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.GeoDistanceSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -743,10 +748,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	public List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon)
 			throws IOException {
 
-		BoolQueryBuilder geoDistanceQuery = getGeoDistance(lat, Lon);
+		GeoDistanceSortBuilder sortBuilder = SortBuilders.geoDistanceSort("location", lat, Lon);
+		sortBuilder.order(SortOrder.ASC);
+		sortBuilder.unit(DistanceUnit.KILOMETERS);
+		sortBuilder.geoDistance(GeoDistance.PLANE);
+		sortBuilder.validation(GeoValidationMethod.STRICT);
+		sortBuilder.ignoreUnmapped(true);
 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-		sourceBuilder.query(geoDistanceQuery);
+		sourceBuilder.sort(sortBuilder);
 		sourceBuilder.size(15);
 		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location" };
 		sourceBuilder.fetchSource(includes, null);
