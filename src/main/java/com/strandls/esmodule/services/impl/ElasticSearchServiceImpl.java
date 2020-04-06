@@ -759,7 +759,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.sort(sortBuilder);
 		sourceBuilder.size(15);
-		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location", "group_id" };
+		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location", "group_name" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -787,7 +787,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
 					maxVotedReco.getScientific_name(), String.valueOf(hit.getSourceAsMap().get("repr_image_url")),
-					distance, hit.getSourceAsMap().get("group_id").toString()));
+					distance, hit.getSourceAsMap().get("group_name").toString()));
 
 		}
 
