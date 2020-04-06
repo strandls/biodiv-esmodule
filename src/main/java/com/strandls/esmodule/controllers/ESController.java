@@ -40,6 +40,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -747,6 +748,25 @@ public class ESController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 
+	}
+
+	@GET
+	@Path(ApiConstants.SPECIES + "/{index}/{type}/{speciesId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "search for the observation with the given speciesId", notes = "Returns a list of observation for the given speciesId", response = ObservationLatLon.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to retrive the data", response = String.class) })
+
+	public Response getSpeciesCoords(@PathParam("index") String index, @PathParam("type") String type,
+			@PathParam("speciesId") String speciesId) {
+		try {
+			List<ObservationLatLon> result = elasticSearchService.getSpeciesCoordinates(index, type, speciesId);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 
 }

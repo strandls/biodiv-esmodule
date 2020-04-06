@@ -13,6 +13,7 @@ public class ObservationNearBy {
 	private String name;
 	private String thumbnail;
 	private Double distance;
+	private String speciesGroupName;
 
 	/**
 	 * 
@@ -26,13 +27,16 @@ public class ObservationNearBy {
 	 * @param name
 	 * @param thumbnail
 	 * @param distance
+	 * @param speciesGroupName
 	 */
-	public ObservationNearBy(Long observationId, String name, String thumbnail, Double distance) {
+	public ObservationNearBy(Long observationId, String name, String thumbnail, Double distance,
+			String speciesGroupName) {
 		super();
 		this.observationId = observationId;
 		this.name = name;
 		this.thumbnail = thumbnail;
 		this.distance = distance;
+		this.speciesGroupName = speciesGroupName;
 	}
 
 	public Long getObservationId() {
@@ -65,6 +69,14 @@ public class ObservationNearBy {
 
 	public void setDistance(Double distance) {
 		this.distance = distance;
+	}
+
+	public String getSpeciesGroupName() {
+		return speciesGroupName;
+	}
+
+	public void setSpeciesGroupName(String speciesGroupName) {
+		this.speciesGroupName = speciesGroupName;
 	}
 
 }
