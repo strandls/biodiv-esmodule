@@ -14,6 +14,7 @@ import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapQuery;
@@ -292,5 +293,7 @@ public interface ElasticSearchService {
 			String geoAggregationField, Integer geoAggegationPrecision);
 
 	public FilterPanelData getListPanel(String index, String type);
+
+	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
 
 }

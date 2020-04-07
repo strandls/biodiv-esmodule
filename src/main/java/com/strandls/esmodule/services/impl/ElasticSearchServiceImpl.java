@@ -86,6 +86,7 @@ import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.MaxVotedReco;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationMapInfo;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.SimilarObservation;
@@ -758,7 +759,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.sort(sortBuilder);
 		sourceBuilder.size(15);
-		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location" };
+		String[] includes = { "observation_id", "repr_image_url", "max_voted_reco", "location", "group_name" };
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
@@ -786,7 +787,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			nearBy.add(new ObservationNearBy(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
 					maxVotedReco.getScientific_name(), String.valueOf(hit.getSourceAsMap().get("repr_image_url")),
-					distance));
+					distance, hit.getSourceAsMap().get("group_name").toString()));
 
 		}
 
@@ -1322,6 +1323,42 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		return customFieldList;
+	}
+
+	@Override
+	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId) {
+
+		try {
+			BoolQueryBuilder query = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termsQuery("max_voted_reco.species_id", speciesId));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(query);
+			sourceBuilder.size(10000);
+			String[] includes = { "observation_id", "location" };
+			sourceBuilder.fetchSource(includes, null);
+			SearchRequest request = new SearchRequest(index);
+			request.types(type);
+			request.source(sourceBuilder);
+			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+			List<ObservationLatLon> obvList = new ArrayList<ObservationLatLon>();
+
+			for (SearchHit hit : response.getHits().getHits()) {
+
+				Location loc = objectMapper.readValue(
+						objectMapper.writeValueAsString(hit.getSourceAsMap().get("location")), Location.class);
+
+				obvList.add(new ObservationLatLon(Long.parseLong(hit.getSourceAsMap().get("observation_id").toString()),
+						loc.getLat(), loc.getLon()));
+
+			}
+			return obvList;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+
+		return null;
 	}
 
 }
