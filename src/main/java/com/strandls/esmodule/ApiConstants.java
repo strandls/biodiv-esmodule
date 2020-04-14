@@ -35,13 +35,15 @@ public class ApiConstants {
 	public static final String AutoComplete = "/auto-complete";
 	public static final String GetTopUsers="/leaderboard";
 	public static final String GetUserScore="/userscore";
-
+	public static final String REINDEX = "/reindex";
+	public static final String FILTERAUTOCOMPLETE = "/filterautocomplete";
 	// binning Controller
 	public static final String BINNING = "/binning";
 	public static final String SQUARE = "/square";
-
+	
 	// geo Controller
 	public static final String GEO = "/geo";
 	public static final String WITHIN = "/within";
+
 
 }

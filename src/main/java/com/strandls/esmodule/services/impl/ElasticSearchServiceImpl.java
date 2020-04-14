@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -52,6 +54,13 @@ import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipel
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.search.suggest.Suggest;
+import org.elasticsearch.search.suggest.Suggest.Suggestion;
+import org.elasticsearch.search.suggest.Suggest.Suggestion.Entry;
+import org.elasticsearch.search.suggest.Suggest.Suggestion.Entry.Option;
+import org.elasticsearch.search.suggest.SuggestBuilder;
+import org.elasticsearch.search.suggest.SuggestBuilders;
+import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -887,6 +896,70 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return processElasticResponse(searchResponse);
 
 	}
+	@Override
+	public List<String> getListPageFilterValue(String index, String type, String filterOn, String text) {
+		
+		List<String>results = new ArrayList<String>();
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		SearchResponse searchResponse = null;
+		SearchRequest searchRequest = new SearchRequest("extended_observation_test");
+		searchRequest.types("extended_records");
+		
+		if(filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil") || 
+				filterOn.equalsIgnoreCase("tags")) 
+		{
+			String prefixPath = null;
+			if(filterOn.equalsIgnoreCase("tags")) {
+				prefixPath = "tags"+".";
+				filterOn = "name";
+			}
+			else {
+			prefixPath = "location_information"+".";
+			}
+			CompletionSuggestionBuilder completionSuggestor = SuggestBuilders.
+					completionSuggestion(prefixPath+filterOn).prefix(text).
+					skipDuplicates(true).size(100);
+			SuggestBuilder suggestBuilder = new SuggestBuilder();
+			suggestBuilder.addSuggestion(filterOn, completionSuggestor);
+			searchSourceBuilder.suggest(suggestBuilder).fetchSource(false);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				Suggestion<? extends Entry<? extends Option>> suggestions = searchResponse.getSuggest().getSuggestion(filterOn);
+				List<? extends Entry<? extends Option>> entries = suggestions.getEntries();	
+				
+				for(Entry<? extends Option> entry :entries) {
+			        List<Suggest.Suggestion.Entry.Option> options = (List<Option>) entry.getOptions();
+			        for(Suggest.Suggestion.Entry.Option option : options) {
+			            results.add(option.getText().toString());
+			        }
+				}
+				
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		}
+		else if (filterOn.equalsIgnoreCase("reconame")) {
+			String field = "all_reco_vote.scientific_name.name";
+			searchSourceBuilder.fetchSource(field, null);
+			searchSourceBuilder.size(100);
+			QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery(field, text);
+			searchSourceBuilder.query(queryBuilder);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					Collection<Object> s = hit.getSourceAsMap().values();
+					results.add(s.toString().replaceAll("[\\[\\]{}]","").split("=")[2]);
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+			
+		}
+		results = (List<String>) new HashSet(results).stream().sorted().collect(Collectors.toList());     
+		return results;
+	}
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index,
@@ -909,9 +982,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
 		return processAggregationResponse(searchResponse);
 	}
+	
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index,
@@ -1052,8 +1125,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	private List<LinkedHashMap<String, LinkedHashMap<String, String>>> processAggregationResponse(
 			SearchResponse searchResponse) {
-//		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
-//				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
 				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
 		
@@ -1092,13 +1163,18 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				userDetails.put("profilePic", bucket.getKeyAsString());
 			}
 			ParsedSimpleValue activityScoreTerms = authorBucket.getAggregations().get("activity_score");
+			System.out.println(activityScoreTerms.getValueAsString());
+			if(Double.parseDouble(activityScoreTerms.getValueAsString())>=0.0d) {
 			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
-
+			}
+			else {
+				userDetails.put(activityScoreTerms.getName(), "0.0");
+			}
 			moduleRecords.put("details", userDetails);
-			//userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
 			records.add(moduleRecords);
 		}
 		return records;
 	}
+
 
 }

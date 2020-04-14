@@ -32,10 +32,14 @@ public class UtilityMethods {
 	}
 	
 	public List<String> getEsindexWithMapping(String index) {
-		return new ArrayList<String>(
-				Arrays.asList(esIndexConstants.get(index),
-				IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping())
-				);
+		String indexMapping = null;
+		if(index.equalsIgnoreCase("etd")) {
+			indexMapping = IndexMappingsConstants.valueOf("mappingOnFieldNameAndCommonName").getMapping();
+		}
+		else if(index.equalsIgnoreCase("eo")) {
+			indexMapping = IndexMappingsConstants.mappingOfObservationIndex.getMapping();
+		}
+		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),indexMapping));
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -247,6 +251,7 @@ public class UtilityMethods {
 	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
 		{
 			put("etdi", "extended_taxon_definition");
+			put("eo","extended_observation_test");
 			put("eaf","extended_activity_feed");
 		}
 	};

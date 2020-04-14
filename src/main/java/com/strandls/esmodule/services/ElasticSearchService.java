@@ -277,4 +277,16 @@ public interface ElasticSearchService {
 	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore
 	(String index, String type, Integer authorId);
 	
+	/**
+	 * @param index
+	 * @param type
+	 * @return
+	 */
+	List<String>getListPageFilterValue(String index, String type, String filterOn, String text);
+	
+	
+	
+	
+	
+	
 }
