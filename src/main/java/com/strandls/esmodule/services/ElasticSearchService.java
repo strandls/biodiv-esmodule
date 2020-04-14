@@ -7,11 +7,14 @@ import java.util.Map;
 
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapQuery;
@@ -220,17 +223,19 @@ public interface ElasticSearchService {
 	ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException;
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
-	
+
 //	MapQueryResponse autoSuggestor(String index, String type, String field, String text);
-	
+
 	/**
-	 * @param index : index to be searched upon
-	 * @param type : type within an index
+	 * @param index  : index to be searched upon
+	 * @param type   : type within an index
 	 * @param field: field to be looked into
-	 * @param text :  text to be searched
+	 * @param text   : text to be searched
 	 * @return
 	 */
-	<T> List<T> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter,Class<T> classMapped);
+	<T> List<T> autoCompletion(String index, String type, String field, String text, String filterField, Integer filter,
+			Class<T> classMapped);
+
 	/**
 	 * @param <T>
 	 * @param index
@@ -240,7 +245,7 @@ public interface ElasticSearchService {
 	 * @param classMapped
 	 * @return
 	 */
-	<T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped);	
+	<T> List<T> autoCompletion(String index, String type, String field, String text, Class<T> classMapped);
 
 	/**
 	 * @param index
@@ -251,42 +256,51 @@ public interface ElasticSearchService {
 	 * @param canonicalText
 	 * @return
 	 */
-	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificField, String scientificText, 
+	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificField, String scientificText,
 			String canonicalField, String canonicalText);
-	//List<String> getAutoSuggestionSearch(String index, String type, String){
-		
-	
+	// List<String> getAutoSuggestionSearch(String index, String type, String){
+
 	/**
 	 * @param index
 	 * @param type
 	 * @param sortOn
 	 * @param sortBy
 	 * @param topUser
-	 * @return 
+	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers
-	(String index, String type, String sortingValue, Integer topUser);
-	
-	
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
+			String sortingValue, Integer topUser);
+
 	/**
 	 * @param index
 	 * @param type
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore
-	(String index, String type, Integer authorId);
-	
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
+			Integer authorId);
+
 	/**
 	 * @param index
 	 * @param type
 	 * @return
 	 */
-	List<String>getListPageFilterValue(String index, String type, String filterOn, String text);
-	
-	
-	
-	
-	
-	
+	List<String> getListPageFilterValue(String index, String type, String filterOn, String text);
+
+	/**
+	 * 
+	 * @param index
+	 * @param type
+	 * @param query
+	 * @param geoAggregationField
+	 * @param geoAggegationPrecision
+	 * @return
+	 */
+	GeoHashAggregationData getNewGeoAggregation(String index, String type, MapSearchQuery query,
+			String geoAggregationField, Integer geoAggegationPrecision);
+
+	public FilterPanelData getListPanel(String index, String type);
+
+	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
+
 }

@@ -28,8 +28,10 @@ import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
-import com.strandls.esmodule.indexes.pojo.Userscore;
+import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapDocument;
@@ -38,6 +40,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
+import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -435,6 +438,46 @@ public class ESController {
 	}
 
 	@POST
+	@Path(ApiConstants.SEARCH + ApiConstants.GEOHASH_AGGREGATION + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Calculate the geohash Aggregation based on the filter conditions", notes = "Returns the GeoHashAggregation in Key value pair", response = GeoHashAggregationData.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "Unable to retireve the data", response = String.class) })
+	public GeoHashAggregationData getGeoHashAggregation(@PathParam("index") String index,
+			@PathParam("type") String type, @QueryParam("geoAggregationField") String geoAggregationField,
+			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
+			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
+			@QueryParam("termsAggregationField") String termsAggregationField,
+			@ApiParam(name = "query") MapSearchQuery query) {
+
+		MapSearchParams searchParams = query.getSearchParams();
+		MapBoundParams boundParams = searchParams.getMapBoundParams();
+		MapBounds bounds = null;
+		if (boundParams != null)
+			bounds = boundParams.getBounds();
+
+		if (onlyFilteredAggregation != null && onlyFilteredAggregation && bounds == null)
+			throw new WebApplicationException(
+					Response.status(Status.BAD_REQUEST).entity("Bounds not specified for filtering").build());
+
+		if (bounds != null && geoAggregationField == null)
+			throw new WebApplicationException(
+					Response.status(Status.BAD_REQUEST).entity("Location field not specified for bounds").build());
+
+		try {
+			return elasticSearchService.getNewGeoAggregation(index, type, query, geoAggregationField,
+					geoAggegationPrecision);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@POST
 	@Path(ApiConstants.SEARCH + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -513,7 +556,7 @@ public class ESController {
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
-	
+
 	@GET
 	@Path(ApiConstants.REINDEX)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -554,7 +597,6 @@ public class ESController {
 		}
 	}
 
-
 	@POST
 	@Path(ApiConstants.INDEX_ADMIN + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
@@ -578,10 +620,10 @@ public class ESController {
 	@Path(ApiConstants.ESMAPPING + "/{index}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ApiOperation(value = "Post Mapping of Document to ES", notes = "Returns Success Failure", response = String.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	
+
 	public Response esPostMapping(@PathParam("index") String index) {
 		try {
 			MapQueryResponse response = null;
@@ -593,9 +635,9 @@ public class ESController {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
-		
+
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@GET
 	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
@@ -607,24 +649,25 @@ public class ESController {
 	public Response autoCompletion(@PathParam("index") String index, @PathParam("type") String type,
 			@QueryParam("field") String field, @QueryParam("text") String fieldText,
 			@QueryParam("groupId") String filterField, @QueryParam("group") Integer filter) {
-		
-		
-		String elasticIndex= utilityMethods.getEsIndexConstants(index);
+
+		String elasticIndex = utilityMethods.getEsIndexConstants(index);
 		String elasticType = utilityMethods.getEsIndexTypeConstant(type);
-		
+
 		try {
 			List<? extends ElasticIndexes> records = null;
 			if (filter == null) {
-				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, utilityMethods.getClass(index));
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText,
+						utilityMethods.getClass(index));
 			} else {
-				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField, filter, utilityMethods.getClass(index));
+				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField,
+						filter, utilityMethods.getClass(index));
 			}
-			if(index.equals("etdi")) {
-				if(field.equals("name")){
+			if (index.equals("etdi")) {
+				if (field.equals("name")) {
 					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
-				}
-				else if(field.equals("common_name")) {
-					records = utilityMethods.rankDocumentBasedOnCommonName((List<ExtendedTaxonDefinition>) records, filterField, fieldText);
+				} else if (field.equals("common_name")) {
+					records = utilityMethods.rankDocumentBasedOnCommonName((List<ExtendedTaxonDefinition>) records,
+							filterField, fieldText);
 				}
 			}
 			return Response.status(Status.OK).entity(records).build();
@@ -634,88 +677,121 @@ public class ESController {
 		}
 
 	}
-	
+
 	@GET
 	@Path(ApiConstants.MATCHPHRASE + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	public Response matchPhrase(@DefaultValue("etdi")@PathParam("index") String index, @DefaultValue("er")@PathParam("type") String type,
-			@DefaultValue("name")@QueryParam("scientificField") String scientificField, @QueryParam("scientificText") String scientificText,
-			@DefaultValue("canonical_form")@QueryParam("canonicalField")String canonicalField, @QueryParam("canonicalText")String canonicalText) {
-		
-		index= utilityMethods.getEsIndexConstants(index);
+	public Response matchPhrase(@DefaultValue("etdi") @PathParam("index") String index,
+			@DefaultValue("er") @PathParam("type") String type,
+			@DefaultValue("name") @QueryParam("scientificField") String scientificField,
+			@QueryParam("scientificText") String scientificText,
+			@DefaultValue("canonical_form") @QueryParam("canonicalField") String canonicalField,
+			@QueryParam("canonicalText") String canonicalText) {
+
+		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		
+
 		try {
-			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField, 
+			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField,
 					scientificText, canonicalField, canonicalText);
-			if(records != null && records.size()>1) {
+			if (records != null && records.size() > 1) {
 				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
 				return Response.status(Status.OK).entity(records.get(0)).build();
 			}
-			return Response.status(Status.OK).entity(records).build();
+			return Response.status(Status.OK).entity(records.get(0)).build();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
 		}
 	}
-	
+
 	@GET
-	@Path(ApiConstants.GetTopUsers+"/{index}/{type}")
+	@Path(ApiConstants.GetTopUsers + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	
-	@ApiOperation(value = "Getting top users based on score",notes="Returns Success Failure", 
-	response = LinkedHashMap.class, responseContainer = "List")
+
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	public Response topUsers(@DefaultValue("eaf")@PathParam("index") String index, 
-			@DefaultValue("er")@PathParam("type") String type,  @QueryParam("value")String sortingValue,
-			@DefaultValue("20")@QueryParam("how_many")String topUser){
-		
-		if(sortingValue.isEmpty())
-			sortingValue=null;
-		index= utilityMethods.getEsIndexConstants(index);
-		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getTopUsers(index, type, sortingValue, Integer.parseInt(topUser));
-		return Response.status(Status.OK).entity(records).build();
-	}
-	
-	@GET
-	@Path(ApiConstants.GetUserScore)
-	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.APPLICATION_JSON)
-	
-	@ApiOperation(value="Getting User Activity Score", notes = "Returns Success Failure",response = Userscore.class)
-	@ApiResponses(value = {@ApiResponse(code = 500, message = "ERROR",response=String.class) })
-	public Response getUserScore(@DefaultValue("eaf")@QueryParam("index")String index, 
-			@DefaultValue("er")@QueryParam("type")String type, @QueryParam("authorId")String authorId) {
-		
+	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
+			@DefaultValue("er") @PathParam("type") String type, @QueryParam("value") String sortingValue,
+			@DefaultValue("20") @QueryParam("how_many") String topUser) {
+
+		if (sortingValue.isEmpty())
+			sortingValue = null;
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getUserScore(index, type, Integer.parseInt(authorId));
-		Userscore record = new Userscore();
-		record.setRecord(records);		
-		return Response.status(Status.OK).entity(record).build();
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
+				type, sortingValue, Integer.parseInt(topUser));
+		return Response.status(Status.OK).entity(records).build();
 	}
-	
-	
+
 	@GET
-	@Path(ApiConstants.FILTERAUTOCOMPLETE+"/{index}/{type}")
+	@Path(ApiConstants.FILTERAUTOCOMPLETE + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Getting Filter Suggestion For List Page", notes = "Return Success Failure", response = String.class, responseContainer = "List")
-	@ApiResponses(value = {@ApiResponse(code = 500, message = "ERROR",response=String.class) })
-	public Response getListPageFilterValue(@PathParam("index")String index, 
-			@PathParam("type")String type,
-			@QueryParam("field")String filterOn, @QueryParam("text")String text) {
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getListPageFilterValue(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("field") String filterOn, @QueryParam("text") String text) {
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<String> results = elasticSearchService.getListPageFilterValue(index, type, filterOn, text);
 		return Response.status(Status.OK).entity(results).build();
+	}
+
+	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
+			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId) {
+
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+				type, Integer.parseInt(authorId));
+		UserScore record = new UserScore();
+		record.setRecord(records);
+		return Response.status(Status.OK).entity(record).build();
+	}
+
+	@GET
+	@Path(ApiConstants.FILTERS + ApiConstants.LIST + "/{index}/{type}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Get all the dynamic filters", notes = "Return all the filter", response = FilterPanelData.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the data", response = String.class) })
+
+	public Response getFilterLists(@PathParam("index") String index, @PathParam("type") String type) {
+		try {
+			FilterPanelData result = elasticSearchService.getListPanel(index, type);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+
+	}
+
+	@GET
+	@Path(ApiConstants.SPECIES + "/{index}/{type}/{speciesId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "search for the observation with the given speciesId", notes = "Returns a list of observation for the given speciesId", response = ObservationLatLon.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to retrive the data", response = String.class) })
+
+	public Response getSpeciesCoords(@PathParam("index") String index, @PathParam("type") String type,
+			@PathParam("speciesId") String speciesId) {
+		try {
+			List<ObservationLatLon> result = elasticSearchService.getSpeciesCoordinates(index, type, speciesId);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 }
