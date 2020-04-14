@@ -743,6 +743,10 @@ public class ESController {
 		return Response.status(Status.OK).entity(results).build();
 	}
 
+	@GET
+	@Path(ApiConstants.GetUserScore)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,

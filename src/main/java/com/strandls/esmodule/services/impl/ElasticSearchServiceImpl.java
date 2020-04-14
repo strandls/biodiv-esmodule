@@ -1166,6 +1166,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private List<LinkedHashMap<String, LinkedHashMap<String, String>>> processAggregationResponse(
 			SearchResponse searchResponse) {
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
+
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
 		Collection<? extends Bucket> authorBuckets = authorTerms.getBuckets();
 
