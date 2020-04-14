@@ -251,7 +251,7 @@ public class UtilityMethods {
 	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
 		{
 			put("etdi", "extended_taxon_definition");
-			put("eo","extended_observation_test");
+			put("eo","extended_observation");
 			put("eaf","extended_activity_feed");
 		}
 	};
