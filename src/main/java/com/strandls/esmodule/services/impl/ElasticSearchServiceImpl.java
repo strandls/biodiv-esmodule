@@ -41,6 +41,7 @@ import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -940,6 +941,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public List<String> getListPageFilterValue(String index, String type, String filterOn, String text) {
 
@@ -1028,11 +1030,17 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
-			String sortingValue, Integer topUser) {
-
+			String sortingValue, Integer topUser, String timeFilter) {
+		// For Filtering the records based on the time frame
+		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
+		QueryBuilder filterByDate = QueryBuilders.boolQuery().must
+				(QueryBuilders.boolQuery().filter(rangeFilter));
+		
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
 		searchSourceBuilder.aggregation(aggs);
+		if(timeFilter != null)
+			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
@@ -1044,9 +1052,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
-		// processAggregationResponse(searchRespone
+		// processAggregationResponse(searchRespone)
 		List<Integer> topUserIds = getUserIds(searchResponse);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("author_id", topUserIds));
+		
+		// added the must part in the previous below query builder 
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().
+				filter(QueryBuilders.termsQuery("author_id", topUserIds)).must
+				(QueryBuilders.boolQuery().filter(rangeFilter));
+		
 		searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -1199,7 +1212,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				userDetails.put("profilePic", bucket.getKeyAsString());
 			}
 			ParsedSimpleValue activityScoreTerms = authorBucket.getAggregations().get("activity_score");
-			System.out.println(activityScoreTerms.getValueAsString());
 			if (Double.parseDouble(activityScoreTerms.getValueAsString()) >= 0.0d) {
 				userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
 			} else {

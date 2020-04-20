@@ -269,7 +269,7 @@ public interface ElasticSearchService {
 	 * @return
 	 */
 	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
-			String sortingValue, Integer topUser);
+			String sortingValue, Integer topUser, String timeFilter);
 
 	/**
 	 * @param index

@@ -714,18 +714,29 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", 
+	response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
-			@DefaultValue("er") @PathParam("type") String type, @QueryParam("value") String sortingValue,
-			@DefaultValue("20") @QueryParam("how_many") String topUser) {
-
+			@DefaultValue("er") @PathParam("type") String type,
+			@DefaultValue("")@QueryParam("value") String sortingValue,
+			@DefaultValue("20") @QueryParam("how_many") String topUser,
+			@DefaultValue("")@QueryParam("time") String timePeriod) {
+		
+		String timeFilter = null;
 		if (sortingValue.isEmpty())
 			sortingValue = null;
+		if(timePeriod.isEmpty())
+			timePeriod = null;
+		else 
+			timeFilter = utilityMethods.getTimeWindow(timePeriod);
+		
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
-				type, sortingValue, Integer.parseInt(topUser));
+		
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
+				elasticSearchService.getTopUsers(index,type, sortingValue, 
+						Integer.parseInt(topUser),timeFilter);
 		return Response.status(Status.OK).entity(records).build();
 	}
 
@@ -754,7 +765,8 @@ public class ESController {
 
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
+				elasticSearchService.getUserScore(index,
 				type, Integer.parseInt(authorId));
 		UserScore record = new UserScore();
 		record.setRecord(records);

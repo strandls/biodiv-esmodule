@@ -1,5 +1,6 @@
 package com.strandls.esmodule.utils;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -207,6 +208,22 @@ public class UtilityMethods {
 		
 	}
 	
+	public final String getTimeWindow(String filterType) {
+		LocalDate now = LocalDate.now();
+		switch(filterType) {
+		case "a": // today
+			return now.toString();
+		case "b": //past week
+			return now.minusDays(7).toString();
+		case "c": // last month
+			return now.minusMonths(1).toString();
+		case "d": // last three month
+				return now.minusMonths(3).toString();
+		case "e": // past year
+			return now.minusYears(1).toString();
+		}
+		return null;
+	}
 	
 	private LinkedHashMap<Integer, Integer> sortHashMaponValue(HashMap<Integer, Integer> indexScores) {
 		return indexScores.entrySet().stream().sorted(Collections.reverseOrder(Entry.comparingByValue()))
