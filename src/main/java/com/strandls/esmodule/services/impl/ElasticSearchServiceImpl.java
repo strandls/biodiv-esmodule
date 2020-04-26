@@ -1081,7 +1081,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String sortingField = null;
 		AggregationBuilder aggs = termsAggregation("group_by_author", "author_id", TotalUserUpperBound);
 		aggs.subAggregation(
-				filterAggregation("group_by_score_category_participate", "score_category.keyword", "Participation"));
+				filterAggregation("group_by_score_category_engagement", "score_category.keyword", "Engagement"));
 		aggs.subAggregation(filterAggregation("group_by_score_category_content", "score_category.keyword", "Content"));
 		if (sortingValue != null) {
 			if (sortingValue.contains(".")) {
@@ -1126,9 +1126,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	private BucketScriptPipelineAggregationBuilder getBucketScriptAggregation() {
 		Map<String, String> bucketsPathsMap = new HashMap<>();
-		bucketsPathsMap.put("participate", "group_by_score_category_participate>_count");
+		bucketsPathsMap.put("engagement", "group_by_score_category_engagement>_count");
 		bucketsPathsMap.put("content", "group_by_score_category_content>_count");
-		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.participate)))");
+		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.engagement)))");
 
 		BucketScriptPipelineAggregationBuilder bucketScript = PipelineAggregatorBuilders.bucketScript("activity_score",
 				bucketsPathsMap, script);
