@@ -210,16 +210,17 @@ public class UtilityMethods {
 	
 	public final String getTimeWindow(String filterType) {
 		LocalDate now = LocalDate.now();
+		filterType = filterType.toLowerCase();
 		switch(filterType) {
-		case "a": // today
+		case "today": // today
 			return now.toString();
-		case "b": //past week
+		case "week": //past week
 			return now.minusDays(7).toString();
-		case "c": // last month
+		case "month": // last month
 			return now.minusMonths(1).toString();
-		case "d": // last three month
+		case "3month": // last three month
 				return now.minusMonths(3).toString();
-		case "e": // past year
+		case "year": // past year
 			return now.minusYears(1).toString();
 		}
 		return null;
