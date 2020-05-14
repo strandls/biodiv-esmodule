@@ -218,7 +218,7 @@ public class UtilityMethods {
 			return now.minusDays(7).toString();
 		case "month": // last month
 			return now.minusMonths(1).toString();
-		case "3month": // last three month
+		case "month3": // last three month
 				return now.minusMonths(3).toString();
 		case "year": // past year
 			return now.minusYears(1).toString();
