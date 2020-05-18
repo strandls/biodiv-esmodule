@@ -5,11 +5,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -40,6 +41,7 @@ import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
 import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -62,6 +64,13 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.GeoDistanceSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.search.suggest.Suggest;
+import org.elasticsearch.search.suggest.Suggest.Suggestion;
+import org.elasticsearch.search.suggest.Suggest.Suggestion.Entry;
+import org.elasticsearch.search.suggest.Suggest.Suggestion.Entry.Option;
+import org.elasticsearch.search.suggest.SuggestBuilder;
+import org.elasticsearch.search.suggest.SuggestBuilders;
+import org.elasticsearch.search.suggest.completion.CompletionSuggestionBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -932,6 +941,69 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@Override
+	public List<String> getListPageFilterValue(String index, String type, String filterOn, String text) {
+
+		List<String> results = new ArrayList<String>();
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		SearchResponse searchResponse = null;
+		SearchRequest searchRequest = new SearchRequest("extended_observation_test");
+		searchRequest.types("extended_records");
+
+		if (filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil")
+				|| filterOn.equalsIgnoreCase("tags")) {
+			String prefixPath = null;
+			if (filterOn.equalsIgnoreCase("tags")) {
+				prefixPath = "tags" + ".";
+				filterOn = "name";
+			} else {
+				prefixPath = "location_information" + ".";
+			}
+			CompletionSuggestionBuilder completionSuggestor = SuggestBuilders
+					.completionSuggestion(prefixPath + filterOn).prefix(text).skipDuplicates(true).size(100);
+			SuggestBuilder suggestBuilder = new SuggestBuilder();
+			suggestBuilder.addSuggestion(filterOn, completionSuggestor);
+			searchSourceBuilder.suggest(suggestBuilder).fetchSource(false);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				Suggestion<? extends Entry<? extends Option>> suggestions = searchResponse.getSuggest()
+						.getSuggestion(filterOn);
+				List<? extends Entry<? extends Option>> entries = suggestions.getEntries();
+
+				for (Entry<? extends Option> entry : entries) {
+					List<Suggest.Suggestion.Entry.Option> options = (List<Option>) entry.getOptions();
+					for (Suggest.Suggestion.Entry.Option option : options) {
+						results.add(option.getText().toString());
+					}
+				}
+
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		} else if (filterOn.equalsIgnoreCase("reconame")) {
+			String field = "all_reco_vote.scientific_name.name";
+			searchSourceBuilder.fetchSource(field, null);
+			searchSourceBuilder.size(100);
+			QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery(field, text);
+			searchSourceBuilder.query(queryBuilder);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					Collection<Object> s = hit.getSourceAsMap().values();
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").split("=")[2]);
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+		results = (List<String>) new HashSet(results).stream().sorted().collect(Collectors.toList());
+		return results;
+	}
+
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
 			Integer authorId) {
@@ -953,17 +1025,22 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-
 		return processAggregationResponse(searchResponse);
 	}
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
-			String sortingValue, Integer topUser) {
-
+			String sortingValue, Integer topUser, String timeFilter) {
+		// For Filtering the records based on the time frame
+		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
+		QueryBuilder filterByDate = QueryBuilders.boolQuery().must
+				(QueryBuilders.boolQuery().filter(rangeFilter));
+		
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
 		searchSourceBuilder.aggregation(aggs);
+		if(timeFilter != null)
+			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.types(type);
@@ -975,9 +1052,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
-		// processAggregationResponse(searchRespone
+		// processAggregationResponse(searchRespone)
 		List<Integer> topUserIds = getUserIds(searchResponse);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("author_id", topUserIds));
+		
+		// added the must part in the previous below query builder 
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().
+				filter(QueryBuilders.termsQuery("author_id", topUserIds)).must
+				(QueryBuilders.boolQuery().filter(rangeFilter));
+		
 		searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -999,7 +1081,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String sortingField = null;
 		AggregationBuilder aggs = termsAggregation("group_by_author", "author_id", TotalUserUpperBound);
 		aggs.subAggregation(
-				filterAggregation("group_by_score_category_participate", "score_category.keyword", "Participation"));
+				filterAggregation("group_by_score_category_engagement", "score_category.keyword", "Engagement"));
 		aggs.subAggregation(filterAggregation("group_by_score_category_content", "score_category.keyword", "Content"));
 		if (sortingValue != null) {
 			if (sortingValue.contains(".")) {
@@ -1044,9 +1126,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	private BucketScriptPipelineAggregationBuilder getBucketScriptAggregation() {
 		Map<String, String> bucketsPathsMap = new HashMap<>();
-		bucketsPathsMap.put("participate", "group_by_score_category_participate>_count");
+		bucketsPathsMap.put("engagement", "group_by_score_category_engagement>_count");
 		bucketsPathsMap.put("content", "group_by_score_category_content>_count");
-		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.participate)))");
+		Script script = new Script("Math.round(10*(Math.log10(params.content)+Math.log10(params.engagement)))");
 
 		BucketScriptPipelineAggregationBuilder bucketScript = PipelineAggregatorBuilders.bucketScript("activity_score",
 				bucketsPathsMap, script);
@@ -1096,8 +1178,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	private List<LinkedHashMap<String, LinkedHashMap<String, String>>> processAggregationResponse(
 			SearchResponse searchResponse) {
-//		List<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>> records = 
-//				new ArrayList<LinkedHashMap<String, LinkedHashMap<String, LinkedHashMap<String, String>>>>();
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = new ArrayList<LinkedHashMap<String, LinkedHashMap<String, String>>>();
 
 		Terms authorTerms = searchResponse.getAggregations().get("group_by_author");
@@ -1132,10 +1212,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				userDetails.put("profilePic", bucket.getKeyAsString());
 			}
 			ParsedSimpleValue activityScoreTerms = authorBucket.getAggregations().get("activity_score");
-			userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
-
+			if (Double.parseDouble(activityScoreTerms.getValueAsString()) >= 0.0d) {
+				userDetails.put(activityScoreTerms.getName(), activityScoreTerms.getValueAsString());
+			} else {
+				userDetails.put(activityScoreTerms.getName(), "0.0");
+			}
 			moduleRecords.put("details", userDetails);
-			// userRecord.put(authorBucket.getKeyAsString(), moduleRecords);
 			records.add(moduleRecords);
 		}
 		return records;
@@ -1283,7 +1365,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 
 		}
-		for (Entry<Long, Traits> entry : traitMap.entrySet()) {
+		for (java.util.Map.Entry<Long, Traits> entry : traitMap.entrySet()) {
 			traits.add(entry.getValue());
 		}
 		return traits;
@@ -1318,7 +1400,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				customFieldMap.put(Long.parseLong(customFieldArray[0]), customFieldMapped);
 			}
 		}
-		for (Entry<Long, CustomFields> entry : customFieldMap.entrySet()) {
+		for (java.util.Map.Entry<Long, CustomFields> entry : customFieldMap.entrySet()) {
 			customFieldList.add(entry.getValue());
 		}
 

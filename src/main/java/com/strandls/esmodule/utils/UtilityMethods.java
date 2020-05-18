@@ -1,5 +1,6 @@
 package com.strandls.esmodule.utils;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +33,14 @@ public class UtilityMethods {
 	}
 	
 	public List<String> getEsindexWithMapping(String index) {
-		return new ArrayList<String>(
-				Arrays.asList(esIndexConstants.get(index),
-				IndexMappingsConstants.mappingOnFieldNameAndCommonName.getMapping())
-				);
+		String indexMapping = null;
+		if(index.equalsIgnoreCase("etd")) {
+			indexMapping = IndexMappingsConstants.valueOf("mappingOnFieldNameAndCommonName").getMapping();
+		}
+		else if(index.equalsIgnoreCase("eo")) {
+			indexMapping = IndexMappingsConstants.mappingOfObservationIndex.getMapping();
+		}
+		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),indexMapping));
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -203,6 +208,23 @@ public class UtilityMethods {
 		
 	}
 	
+	public final String getTimeWindow(String filterType) {
+		LocalDate now = LocalDate.now();
+		filterType = filterType.toLowerCase();
+		switch(filterType) {
+		case "today": // today
+			return now.toString();
+		case "week": //past week
+			return now.minusDays(7).toString();
+		case "month": // last month
+			return now.minusMonths(1).toString();
+		case "month3": // last three month
+				return now.minusMonths(3).toString();
+		case "year": // past year
+			return now.minusYears(1).toString();
+		}
+		return null;
+	}
 	
 	private LinkedHashMap<Integer, Integer> sortHashMaponValue(HashMap<Integer, Integer> indexScores) {
 		return indexScores.entrySet().stream().sorted(Collections.reverseOrder(Entry.comparingByValue()))
@@ -247,6 +269,7 @@ public class UtilityMethods {
 	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
 		{
 			put("etdi", "extended_taxon_definition");
+			put("eo","extended_observation");
 			put("eaf","extended_activity_feed");
 		}
 	};

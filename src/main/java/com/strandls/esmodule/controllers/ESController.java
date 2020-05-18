@@ -557,6 +557,24 @@ public class ESController {
 		}
 	}
 
+	@GET
+	@Path(ApiConstants.REINDEX)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = Response.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
+	public MapQueryResponse reIndexObservation() {
+
+		try {
+			return elasticAdminSearchService.reIndexObservation();
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
 	@POST
 	@Path(ApiConstants.MAPPING + "/{index}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -611,7 +629,7 @@ public class ESController {
 			MapQueryResponse response = null;
 			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
 			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
-			return Response.status(Status.OK).entity(response.getMessage()).build();
+			return Response.status(Status.OK).build();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 			throw new WebApplicationException(
@@ -696,27 +714,50 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", 
+	response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
-			@DefaultValue("") @QueryParam("value") String sortingValue,
-			@DefaultValue("20") @QueryParam("how_many") String topUser) {
-
+			@DefaultValue("")@QueryParam("value") String sortingValue,
+			@DefaultValue("20") @QueryParam("how_many") String topUser,
+			@DefaultValue("")@QueryParam("time") String timePeriod) {
+		
+		String timeFilter = null;
 		if (sortingValue.isEmpty())
 			sortingValue = null;
+		if(timePeriod.isEmpty())
+			timePeriod = null;
+		else 
+			timeFilter = utilityMethods.getTimeWindow(timePeriod);
+		
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
-				type, sortingValue, Integer.parseInt(topUser));
+		
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
+				elasticSearchService.getTopUsers(index,type, sortingValue, 
+						Integer.parseInt(topUser),timeFilter);
 		return Response.status(Status.OK).entity(records).build();
+	}
+
+	@GET
+	@Path(ApiConstants.FILTERAUTOCOMPLETE + "/{index}/{type}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Getting Filter Suggestion For List Page", notes = "Return Success Failure", response = String.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getListPageFilterValue(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("field") String filterOn, @QueryParam("text") String text) {
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+		List<String> results = elasticSearchService.getListPageFilterValue(index, type, filterOn, text);
+		return Response.status(Status.OK).entity(results).build();
 	}
 
 	@GET
 	@Path(ApiConstants.GetUserScore)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-
 	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
@@ -724,7 +765,8 @@ public class ESController {
 
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
+				elasticSearchService.getUserScore(index,
 				type, Integer.parseInt(authorId));
 		UserScore record = new UserScore();
 		record.setRecord(records);
@@ -768,5 +810,4 @@ public class ESController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-
 }

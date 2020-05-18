@@ -1,12 +1,14 @@
 package com.strandls.esmodule.services.impl;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+
+import javax.ws.rs.core.Response.Status;
 
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.Strings;
@@ -102,9 +104,33 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 			entity = new StringEntity(mapping, ContentType.APPLICATION_JSON);
 		}
 		Response response = client.performRequest("PUT", index+"/", new HashMap<>(), entity);
+		
 		String status = response.getStatusLine().getReasonPhrase();
 		
 		logger.info("Added mapping to index: {} with status: {}", index, status);
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
+	}
+
+	@Override
+	public MapQueryResponse reIndexObservation() throws IOException {
+		String filePath = "/app/configurations/scripts/";
+		String esUpdateScript = "refreshIndex.sh";
+		String viewUpdateScript = "refreshview.sh";
+		try {
+			Process process = Runtime.getRuntime().exec("sh " + viewUpdateScript, null, new File(filePath));
+			int exitCode = process.waitFor();
+			if(exitCode == 0)
+			{
+				process = Runtime.getRuntime().exec("sh " + esUpdateScript, null, new File(filePath));
+				exitCode = process.waitFor();
+				if(exitCode == 0) {
+					return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful");					
+				}
+			}
+		}
+		catch (Exception e) {
+			return new MapQueryResponse(MapQueryStatus.ERROR,e.getMessage()); 
+		}
+		return new MapQueryResponse(MapQueryStatus.UNKNOWN,"re-indexing failure"); 
 	}
 }

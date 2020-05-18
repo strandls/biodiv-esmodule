@@ -269,7 +269,7 @@ public interface ElasticSearchService {
 	 * @return
 	 */
 	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getTopUsers(String index, String type,
-			String sortingValue, Integer topUser);
+			String sortingValue, Integer topUser, String timeFilter);
 
 	/**
 	 * @param index
@@ -279,6 +279,13 @@ public interface ElasticSearchService {
 	 */
 	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
 			Integer authorId);
+
+	/**
+	 * @param index
+	 * @param type
+	 * @return
+	 */
+	List<String> getListPageFilterValue(String index, String type, String filterOn, String text);
 
 	/**
 	 * 
