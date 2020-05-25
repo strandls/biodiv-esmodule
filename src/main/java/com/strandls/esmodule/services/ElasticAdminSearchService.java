@@ -62,11 +62,17 @@ public interface ElasticAdminSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapQueryResponse createIndex(String index, String type) throws IOException;
+
 	
 	/**
+	 * @param index
+	 * @param mapping
 	 * @return
 	 * @throws IOException
 	 */
-	MapQueryResponse reIndexObservation() throws IOException;
+	MapQueryResponse reIndexObservation(String index, String mapping) throws IOException;
+	
+	
+	
 
 }
