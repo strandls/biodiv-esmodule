@@ -8,6 +8,7 @@ import javax.servlet.ServletContextEvent;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,13 +17,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
+import com.google.inject.servlet.ServletModule;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.binning.servicesImpl.BinningModule;
 import com.strandls.esmodule.controllers.ESControllerModule;
 import com.strandls.esmodule.services.impl.ESServiceImplModule;
 import com.strandls.esmodule.utils.UtilityMethods;
-import com.sun.jersey.guice.JerseyServletModule;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 
 /**
  * @author Abhishek Rudra
@@ -35,7 +35,7 @@ public class ESModuleServeletContextListener extends GuiceServletContextListener
 
 	@Override
 	protected Injector getInjector() {
-		Injector injector = Guice.createInjector(new JerseyServletModule() {
+		Injector injector = Guice.createInjector(new ServletModule() {
 			@Override
 			protected void configureServlets() {
 
@@ -50,9 +50,12 @@ public class ESModuleServeletContextListener extends GuiceServletContextListener
 
 				Map<String, String> props = new HashMap<String, String>();
 				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
+				props.put("jersey.config.server.provider.packages", "com");
 				props.put("jersey.config.server.wadl.disableWadl", "true");
+				
+				bind(ServletContainer.class).in(Scopes.SINGLETON);
 
-				serve("/api/*").with(GuiceContainer.class, props);
+				serve("/api/*").with(ServletContainer.class, props);
 			}
 		}, new ESControllerModule(), new ESServiceImplModule(), new BinningModule());
 

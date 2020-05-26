@@ -12,7 +12,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
+
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.binning.models.GeojsonData;
 import com.strandls.esmodule.binning.servicesImpl.BinningServiceImpl;
