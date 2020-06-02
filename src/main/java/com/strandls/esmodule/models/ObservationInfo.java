@@ -12,9 +12,16 @@ import java.util.List;
  */
 public class ObservationInfo {
 
-	HashMap<Object, Long> monthAggregation;
-	List<SimilarObservation> similarObservation;
-	List<ObservationMapInfo> latlon;
+	private HashMap<Object, Long> monthAggregation;
+	private List<SimilarObservation> similarObservation;
+	private List<ObservationMapInfo> latlon;
+
+	/**
+	 * 
+	 */
+	public ObservationInfo() {
+		super();
+	}
 
 	/**
 	 * @param monthAggregation
@@ -23,6 +30,7 @@ public class ObservationInfo {
 	 */
 	public ObservationInfo(HashMap<Object, Long> monthAggregation, List<SimilarObservation> similarObservation,
 			List<ObservationMapInfo> latlon) {
+		super();
 		this.monthAggregation = monthAggregation;
 		this.similarObservation = similarObservation;
 		this.latlon = latlon;

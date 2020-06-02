@@ -22,7 +22,8 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
+
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.query.MapSearchQuery;

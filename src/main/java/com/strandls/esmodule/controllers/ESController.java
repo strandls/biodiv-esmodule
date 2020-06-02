@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Inject;
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
@@ -399,9 +399,9 @@ public class ESController {
 
 	}
 
-	@POST
+	@GET
 	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{maxVotedRecoId}")
-	@Consumes(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Aggregation for List Page", notes = "Returns Aggregated values", response = ObservationInfo.class)
@@ -417,9 +417,9 @@ public class ESController {
 		}
 	}
 
-	@POST
+	@GET
 	@Path(ApiConstants.NEARBY + "/{index}/{type}")
-	@Consumes(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "NearBy Observation", notes = "Returns all the nearby Observation", response = ObservationNearBy.class, responseContainer = "List")
