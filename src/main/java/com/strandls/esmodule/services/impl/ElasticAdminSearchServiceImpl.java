@@ -124,15 +124,15 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 			MapQueryResponse mapQueryResponse = esPostMapping(index, mapping);
 			String status = mapQueryResponse.getMessage();
 			if(index.equalsIgnoreCase("extended_taxon_definition")){
-				script = "runTaxonMigration.sh";
+				script = "runTaxonElasticMigration.sh";
 				if(status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
 				return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");	
 				}
 			}
 			else if(index.equalsIgnoreCase("extended_observation")){
-				 script = "refreshview.sh";
+				 script = "refreshObservationMV.sh";
 				 if(startShellScriptProcess(script, filePath)==0) {
-					script = "refreshIndex.sh";
+					script = "runObservationElasticMigration.sh";
 					if( status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
 						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
 					}

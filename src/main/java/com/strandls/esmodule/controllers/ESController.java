@@ -567,6 +567,8 @@ public class ESController {
 
 	public Response reIndexObservation(@QueryParam("index") String index) {
 		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
+		if(indexDetails.size() != 2)
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
 		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, 
 				indexDetails.get(0), indexDetails.get(1), logger);
 		Thread thread = new Thread(reIndexingThread);

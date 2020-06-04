@@ -42,11 +42,8 @@ public class ReIndexingThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-//			System.out.println("Starting Re`Indexing");
 			elasticAdminSearchService.reIndexObservation(index, mapping);
-//			System.out.println("Finishing Re-Indexing");
 		} catch (IOException e) {
-//			e.printStackTrace();
 			logger.error(e.getMessage());	
 		}
 	}
