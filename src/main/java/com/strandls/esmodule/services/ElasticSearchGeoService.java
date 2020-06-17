@@ -50,4 +50,6 @@ public interface ElasticSearchGeoService {
 	 */
 	Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision, Double top, Double left,
 			Double bottom, Double right, Long speciesId) throws IOException;
+
+	Map<String, Long> getGeoAggregation(String jsonString) throws IOException;
 }
