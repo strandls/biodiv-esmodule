@@ -161,8 +161,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
 				.precision(precision);
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-
+		BoolQueryBuilder boolqueryBuilder = QueryBuilders.boolQuery();
 		if (top != null && left != null && bottom != null && right != null) {
 
 			top = top < LAT_MIN || top > LAT_MAX ? Math.copySign(LAT_MAX, top) : top;
@@ -170,25 +169,23 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 			left = left < LON_MIN || left > LON_MAX ? Math.copySign(LON_MAX, left) : left;
 			right = right < LON_MIN || right > LON_MAX ? Math.copySign(LON_MAX, right) : right;
-
-			searchSourceBuilder.query(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
+			boolqueryBuilder.filter(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
 		}
 
 		if (speciesId != null || groupId != null) {
-			BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 			if (speciesId != null) {
 				TermQueryBuilder termQuery = QueryBuilders
 						.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
-				boolQuery.filter(termQuery);
+				boolqueryBuilder.must(termQuery);
 			}
 			if (groupId != null) {
-				TermQueryBuilder termQuery = QueryBuilders
-						.termQuery("group_id", speciesId);
-				boolQuery.filter(termQuery);
+				TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
+				boolqueryBuilder.must(termQuery);
 			}
-			searchSourceBuilder.query(boolQuery);
 		}
 
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(boolqueryBuilder);
 		searchSourceBuilder.aggregation(aggregationBuilder);
 
 		SearchRequest searchRequest = new SearchRequest(index);
