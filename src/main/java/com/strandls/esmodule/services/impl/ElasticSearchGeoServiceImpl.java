@@ -180,6 +180,11 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
 			boolqueryBuilder.must(termQuery);
 		}
+		if(jsonObject.has("userGroupId")) {
+			Long userGroupId = jsonObject.getLong("userGroupId");
+			TermQueryBuilder termQuery = QueryBuilders.termQuery("user_group_observations.id", userGroupId);
+			boolqueryBuilder.must(termQuery);
+		}
 		
 		boolqueryBuilder.must(QueryBuilders.termQuery("flag_count", 0));
 
