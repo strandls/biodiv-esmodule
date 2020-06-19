@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -58,6 +59,22 @@ public class GeoController {
 		}
 	}
 	
+	@POST
+	@Path(ApiConstants.AGGREGATION)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Aggregation", notes = "Returns Data", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getGeoAggregation(String jsonString) {
+		try {
+			Map<String, Long> hashToDocCount = service.getGeoAggregation(jsonString); 
+			return Response.ok().entity(hashToDocCount).build();
+		} catch (IOException e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
 	@GET
 	@Path(ApiConstants.AGGREGATION + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)

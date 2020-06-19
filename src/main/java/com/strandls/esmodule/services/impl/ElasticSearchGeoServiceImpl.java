@@ -23,6 +23,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +118,74 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			searchSourceBuilder.query(boolQuery);
 		}
 
+		searchSourceBuilder.aggregation(aggregationBuilder);
+
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		searchRequest.source(searchSourceBuilder);
+
+		try {
+			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+			Aggregations aggregations = searchResponse.getAggregations();
+			ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
+
+			Map<String, Long> hashToCount = new HashMap<String, Long>();
+			for (Bucket b : geoHashGrid.getBuckets()) {
+				hashToCount.put(b.getKeyAsString(), b.getDocCount());
+			}
+			return hashToCount;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	@Override
+	public Map<String, Long> getGeoAggregation(String jsonString) throws IOException {
+		JSONObject jsonObject = new JSONObject(jsonString);
+		String index = jsonObject.getString("index");
+		String type = jsonObject.getString("type");
+		String geoField = jsonObject.getString("geoField");
+
+		Integer precision = jsonObject.getInt("precision");
+
+		Double top = jsonObject.getDouble("top");
+		Double left = jsonObject.getDouble("left");
+		Double bottom = jsonObject.getDouble("bottom");
+		Double right = jsonObject.getDouble("right");
+
+		Long speciesId = jsonObject.getLong("speciesId");
+		Long groupId = jsonObject.getLong("groupId");
+
+		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
+
+		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
+				.precision(precision);
+		BoolQueryBuilder boolqueryBuilder = QueryBuilders.boolQuery();
+		if (top != null && left != null && bottom != null && right != null) {
+
+			top = top < LAT_MIN || top > LAT_MAX ? Math.copySign(LAT_MAX, top) : top;
+			bottom = bottom < LAT_MIN || bottom > LAT_MAX ? Math.copySign(LAT_MAX, bottom) : bottom;
+
+			left = left < LON_MIN || left > LON_MAX ? Math.copySign(LON_MAX, left) : left;
+			right = right < LON_MIN || right > LON_MAX ? Math.copySign(LON_MAX, right) : right;
+			boolqueryBuilder.filter(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
+		}
+
+		if (speciesId != null || groupId != null) {
+			if (speciesId != null) {
+				TermQueryBuilder termQuery = QueryBuilders
+						.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
+				boolqueryBuilder.must(termQuery);
+			}
+			if (groupId != null) {
+				TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
+				boolqueryBuilder.must(termQuery);
+			}
+		}
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(boolqueryBuilder);
 		searchSourceBuilder.aggregation(aggregationBuilder);
 
 		SearchRequest searchRequest = new SearchRequest(index);
