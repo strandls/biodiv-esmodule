@@ -181,7 +181,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			boolqueryBuilder.must(termQuery);
 		}
 		
-		boolqueryBuilder.must(QueryBuilders.rangeQuery("flag_count").gt(0));
+		boolqueryBuilder.must(QueryBuilders.termQuery("flag_count", 0));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.query(boolqueryBuilder);
