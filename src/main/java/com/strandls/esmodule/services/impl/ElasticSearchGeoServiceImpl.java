@@ -154,9 +154,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		Double bottom = jsonObject.getDouble("bottom");
 		Double right = jsonObject.getDouble("right");
 
-		Long speciesId = jsonObject.getLong("speciesId");
-		Long groupId = jsonObject.getLong("groupId");
-
 		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
 
 		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
@@ -172,16 +169,16 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			boolqueryBuilder.filter(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
 		}
 
-		if (speciesId != null || groupId != null) {
-			if (speciesId != null) {
-				TermQueryBuilder termQuery = QueryBuilders
-						.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
-				boolqueryBuilder.must(termQuery);
-			}
-			if (groupId != null) {
-				TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
-				boolqueryBuilder.must(termQuery);
-			}
+		if(jsonObject.has("speciesId")) {
+			Long speciesId = jsonObject.getLong("speciesId");
+			TermQueryBuilder termQuery = QueryBuilders
+					.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
+			boolqueryBuilder.must(termQuery);
+		}
+		if(jsonObject.has("groupId")) {
+			Long groupId = jsonObject.getLong("groupId");
+			TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
+			boolqueryBuilder.must(termQuery);
 		}
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
