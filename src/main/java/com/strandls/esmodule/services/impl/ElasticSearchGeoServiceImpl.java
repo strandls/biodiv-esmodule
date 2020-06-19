@@ -172,7 +172,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		if(jsonObject.has("speciesId")) {
 			Long speciesId = jsonObject.getLong("speciesId");
 			TermQueryBuilder termQuery = QueryBuilders
-					.termQuery("all_reco_vote.scientific_name.taxon_detail.species_id", speciesId);
+					.termQuery("max_voted_reco.species_id", speciesId);
 			boolqueryBuilder.must(termQuery);
 		}
 		if(jsonObject.has("groupId")) {
@@ -180,6 +180,8 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
 			boolqueryBuilder.must(termQuery);
 		}
+		
+		boolqueryBuilder.must(QueryBuilders.rangeQuery("flag_count").gt(0));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		searchSourceBuilder.query(boolqueryBuilder);
