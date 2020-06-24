@@ -1,6 +1,7 @@
 package com.strandls.esmodule.controllers;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -15,8 +16,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import org.elasticsearch.common.geo.GeoPoint;
 
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.models.MapResponse;
@@ -87,7 +86,7 @@ public class GeoController {
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getGeoBounds(String jsonString) {
 		try {
-			Map<String, GeoPoint> boundPoints = service.getGeoBounds(jsonString); 
+			List<List<Double>> boundPoints = service.getGeoBounds(jsonString); 
 			return Response.ok().entity(boundPoints).build();
 		} catch (IOException e) {
 			throw new WebApplicationException(

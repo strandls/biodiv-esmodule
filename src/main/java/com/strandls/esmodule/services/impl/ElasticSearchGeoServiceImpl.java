@@ -11,7 +11,6 @@ import javax.inject.Inject;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -144,7 +143,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	}
 
 	@Override
-	public Map<String, GeoPoint> getGeoBounds(String jsonString) throws IOException {
+	public List<List<Double>> getGeoBounds(String jsonString) throws IOException {
 		JSONObject jsonObject = new JSONObject(jsonString);
 		String index = jsonObject.getString("index");
 		String type = jsonObject.getString("type");
@@ -164,10 +163,19 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		Aggregations aggregations = searchResponse.getAggregations();
 		GeoBounds geoBounds = aggregations.get("aggs");
-		Map<String, GeoPoint> result = new HashMap<String, GeoPoint>();
-		result.put("topLeft", geoBounds.topLeft());
-		result.put("bottomRight", geoBounds.bottomRight());
-
+		
+		List<List<Double>> result = new ArrayList<List<Double>>();
+		List<Double> topLeft = new ArrayList<Double>();
+		topLeft.add(geoBounds.topLeft().getLat());
+		topLeft.add(geoBounds.topLeft().getLon());
+		
+		List<Double> bottomRight = new ArrayList<Double>();
+		bottomRight.add(geoBounds.bottomRight().getLat());
+		bottomRight.add(geoBounds.bottomRight().getLon());
+		
+		result.add(topLeft);
+		result.add(bottomRight);
+		
 		return result;
 	}
 
