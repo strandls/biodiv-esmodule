@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -22,6 +23,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
+import org.elasticsearch.search.aggregations.metrics.geobounds.GeoBounds;
+import org.elasticsearch.search.aggregations.metrics.geobounds.GeoBoundsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -141,6 +144,34 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	}
 
 	@Override
+	public Map<String, GeoPoint> getGeoBounds(String jsonString) throws IOException {
+		JSONObject jsonObject = new JSONObject(jsonString);
+		String index = jsonObject.getString("index");
+		String type = jsonObject.getString("type");
+
+		BoolQueryBuilder boolqueryBuilder = getBooleanSearchQuery(jsonString);
+
+		GeoBoundsAggregationBuilder aggregation = new GeoBoundsAggregationBuilder("aggs").field("location");
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(boolqueryBuilder);
+		searchSourceBuilder.aggregation(aggregation);
+
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		searchRequest.source(searchSourceBuilder);
+
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+		Aggregations aggregations = searchResponse.getAggregations();
+		GeoBounds geoBounds = aggregations.get("agg");
+		Map<String, GeoPoint> result = new HashMap<String, GeoPoint>();
+		result.put("topLeft", geoBounds.topLeft());
+		result.put("bottomRight", geoBounds.bottomRight());
+
+		return result;
+	}
+
+	@Override
 	public Map<String, Long> getGeoAggregation(String jsonString) throws IOException {
 		JSONObject jsonObject = new JSONObject(jsonString);
 		String index = jsonObject.getString("index");
@@ -149,6 +180,33 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 		Integer precision = jsonObject.getInt("precision");
 
+		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
+				.precision(precision);
+		BoolQueryBuilder boolqueryBuilder = getBooleanSearchQuery(jsonString);
+
+		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+		searchSourceBuilder.query(boolqueryBuilder);
+		searchSourceBuilder.aggregation(aggregationBuilder);
+
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
+		searchRequest.source(searchSourceBuilder);
+
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+		Aggregations aggregations = searchResponse.getAggregations();
+		ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
+
+		Map<String, Long> hashToCount = new HashMap<String, Long>();
+		for (Bucket b : geoHashGrid.getBuckets()) {
+			hashToCount.put(b.getKeyAsString(), b.getDocCount());
+		}
+		return hashToCount;
+	}
+
+	private BoolQueryBuilder getBooleanSearchQuery(String jsonString) {
+		JSONObject jsonObject = new JSONObject(jsonString);
+		String geoField = jsonObject.getString("geoField");
+
 		Double top = jsonObject.getDouble("top");
 		Double left = jsonObject.getDouble("left");
 		Double bottom = jsonObject.getDouble("bottom");
@@ -156,8 +214,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
 
-		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
-				.precision(precision);
 		BoolQueryBuilder boolqueryBuilder = QueryBuilders.boolQuery();
 		if (top != null && left != null && bottom != null && right != null) {
 
@@ -169,47 +225,23 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			boolqueryBuilder.filter(QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom, right));
 		}
 
-		if(jsonObject.has("speciesId")) {
+		if (jsonObject.has("speciesId")) {
 			Long speciesId = jsonObject.getLong("speciesId");
-			TermQueryBuilder termQuery = QueryBuilders
-					.termQuery("max_voted_reco.species_id", speciesId);
+			TermQueryBuilder termQuery = QueryBuilders.termQuery("max_voted_reco.species_id", speciesId);
 			boolqueryBuilder.must(termQuery);
 		}
-		if(jsonObject.has("groupId")) {
+		if (jsonObject.has("groupId")) {
 			Long groupId = jsonObject.getLong("groupId");
 			TermQueryBuilder termQuery = QueryBuilders.termQuery("group_id", groupId);
 			boolqueryBuilder.must(termQuery);
 		}
-		if(jsonObject.has("userGroupId")) {
+		if (jsonObject.has("userGroupId")) {
 			Long userGroupId = jsonObject.getLong("userGroupId");
 			TermQueryBuilder termQuery = QueryBuilders.termQuery("user_group_observations.id", userGroupId);
 			boolqueryBuilder.must(termQuery);
 		}
-		
+
 		boolqueryBuilder.must(QueryBuilders.termQuery("flag_count", 0));
-
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-		searchSourceBuilder.query(boolqueryBuilder);
-		searchSourceBuilder.aggregation(aggregationBuilder);
-
-		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
-		searchRequest.source(searchSourceBuilder);
-
-		try {
-			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-			Aggregations aggregations = searchResponse.getAggregations();
-			ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
-
-			Map<String, Long> hashToCount = new HashMap<String, Long>();
-			for (Bucket b : geoHashGrid.getBuckets()) {
-				hashToCount.put(b.getKeyAsString(), b.getDocCount());
-			}
-			return hashToCount;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return boolqueryBuilder;
 	}
-
 }
