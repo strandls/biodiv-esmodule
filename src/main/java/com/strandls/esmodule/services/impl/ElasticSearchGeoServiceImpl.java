@@ -207,16 +207,15 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		JSONObject jsonObject = new JSONObject(jsonString);
 		String geoField = jsonObject.getString("geoField");
 
-		Double top = jsonObject.getDouble("top");
-		Double left = jsonObject.getDouble("left");
-		Double bottom = jsonObject.getDouble("bottom");
-		Double right = jsonObject.getDouble("right");
-
-		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
-
 		BoolQueryBuilder boolqueryBuilder = QueryBuilders.boolQuery();
-		if (top != null && left != null && bottom != null && right != null) {
+		if (jsonObject.has("top") && jsonObject.has("left") && jsonObject.has("bottom") && jsonObject.has("right")) {
 
+			Double top = jsonObject.getDouble("top");
+			Double left = jsonObject.getDouble("left");
+			Double bottom = jsonObject.getDouble("bottom");
+			Double right = jsonObject.getDouble("right");
+
+			logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
 			top = top < LAT_MIN || top > LAT_MAX ? Math.copySign(LAT_MAX, top) : top;
 			bottom = bottom < LAT_MIN || bottom > LAT_MAX ? Math.copySign(LAT_MAX, bottom) : bottom;
 
