@@ -16,6 +16,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.elasticsearch.common.geo.GeoPoint;
+
 import com.strandls.esmodule.ApiConstants;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.services.ElasticSearchGeoService;
@@ -75,6 +77,24 @@ public class GeoController {
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
+	
+	@POST
+	@Path(ApiConstants.BOUNDS)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Bounds", notes = "Returns bounds from the data", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getGeoBounds(String jsonString) {
+		try {
+			Map<String, GeoPoint> boundPoints = service.getGeoBounds(jsonString); 
+			return Response.ok().entity(boundPoints).build();
+		} catch (IOException e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
 	@GET
 	@Path(ApiConstants.AGGREGATION + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
