@@ -163,7 +163,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		Aggregations aggregations = searchResponse.getAggregations();
-		GeoBounds geoBounds = aggregations.get("agg");
+		GeoBounds geoBounds = aggregations.get("aggs");
 		Map<String, GeoPoint> result = new HashMap<String, GeoPoint>();
 		result.put("topLeft", geoBounds.topLeft());
 		result.put("bottomRight", geoBounds.bottomRight());
