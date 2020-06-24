@@ -1,9 +1,8 @@
 package com.strandls.esmodule.services;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-
-import org.elasticsearch.common.geo.GeoPoint;
 
 import com.strandls.esmodule.models.MapResponse;
 
@@ -55,5 +54,5 @@ public interface ElasticSearchGeoService {
 
 	Map<String, Long> getGeoAggregation(String jsonString) throws IOException;
 
-	Map<String, GeoPoint> getGeoBounds(String jsonString) throws IOException;
+	List<List<Double>> getGeoBounds(String jsonString) throws IOException;
 }
