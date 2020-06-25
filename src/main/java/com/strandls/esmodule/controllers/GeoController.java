@@ -1,11 +1,13 @@
 package com.strandls.esmodule.controllers;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -52,6 +54,40 @@ public class GeoController {
 
 		try {
 			return service.getGeoWithinDocuments(index, type, geoField, top, left, bottom, right);
+		} catch (IOException e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@POST
+	@Path(ApiConstants.AGGREGATION)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Aggregation", notes = "Returns Data", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getGeoAggregation(String jsonString) {
+		try {
+			Map<String, Long> hashToDocCount = service.getGeoAggregation(jsonString); 
+			return Response.ok().entity(hashToDocCount).build();
+		} catch (IOException e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@POST
+	@Path(ApiConstants.BOUNDS)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Bounds", notes = "Returns bounds from the data", response = Map.class)
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getGeoBounds(String jsonString) {
+		try {
+			List<List<Double>> boundPoints = service.getGeoBounds(jsonString); 
+			return Response.ok().entity(boundPoints).build();
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
