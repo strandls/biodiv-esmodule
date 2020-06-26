@@ -4,18 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
-import javax.ws.rs.core.Response.Status;
+import javax.inject.Inject;
 
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.models.MapDocument;
@@ -113,25 +112,58 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 
 	@Override
-	public MapQueryResponse reIndexObservation() throws IOException {
+	public MapQueryResponse reIndex(String index, String mapping) throws IOException {
 		String filePath = "/app/configurations/scripts/";
-		String esUpdateScript = "refreshIndex.sh";
-		String viewUpdateScript = "refreshview.sh";
-		try {
-			Process process = Runtime.getRuntime().exec("sh " + viewUpdateScript, null, new File(filePath));
-			int exitCode = process.waitFor();
-			if(exitCode == 0)
-			{
-				process = Runtime.getRuntime().exec("sh " + esUpdateScript, null, new File(filePath));
-				exitCode = process.waitFor();
-				if(exitCode == 0) {
-					return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful");					
+		String script = null;
+		Response response  = deleteIndex(index);
+		if(response != null)
+		{
+			MapQueryResponse mapQueryResponse = esPostMapping(index, mapping);
+			String status = mapQueryResponse.getMessage();
+			if(index.equalsIgnoreCase("extended_taxon_definition")){
+				script = "runTaxonElasticMigration.sh";
+				if(status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
+				return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");	
+				}
+			}
+			else if(index.equalsIgnoreCase("extended_observation")){
+				 script = "refreshObservationMV.sh";
+				 if(startShellScriptProcess(script, filePath)==0) {
+					script = "runObservationElasticMigration.sh";
+					if( status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
+						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
+					}
 				}
 			}
 		}
-		catch (Exception e) {
-			return new MapQueryResponse(MapQueryStatus.ERROR,e.getMessage()); 
-		}
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN,"re-indexing failure"); 
+	}
+	
+	private Response deleteIndex(String index) {
+		Request request = new Request("DELETE", index);
+		Response response = null;
+		try {
+			response  = client.performRequest(request);
+			return response;
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
+		return response;
+		
+	}
+	
+
+	private Integer startShellScriptProcess(String script, String filePath) {
+		Process process;
+		try {
+			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
+			int exitCode = process.waitFor();
+			return exitCode;
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+		}
+		return -1;
 	}
 }

@@ -48,6 +48,7 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
+import com.strandls.esmodule.utils.ReIndexingThread;
 import com.strandls.esmodule.utils.UtilityMethods;
 
 import io.swagger.annotations.Api;
@@ -564,16 +565,18 @@ public class ESController {
 	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = Response.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public MapQueryResponse reIndexObservation() {
-
-		try {
-			return elasticAdminSearchService.reIndexObservation();
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-			throw new WebApplicationException(
-					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
-		}
+	public Response reIndex(@QueryParam("index") String index) {
+		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
+		if(indexDetails.size() != 2)
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
+		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, 
+				indexDetails.get(0), indexDetails.get(1), logger);
+		Thread thread = new Thread(reIndexingThread);
+		thread.start();
+		return Response.status(Status.OK).build();
 	}
+	
+	
 
 	@POST
 	@Path(ApiConstants.MAPPING + "/{index}")
