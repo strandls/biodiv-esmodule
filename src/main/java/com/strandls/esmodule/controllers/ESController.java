@@ -565,7 +565,7 @@ public class ESController {
 	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = Response.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public Response reIndexObservation(@QueryParam("index") String index) {
+	public Response reIndex(@QueryParam("index") String index) {
 		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
 		if(indexDetails.size() != 2)
 			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
@@ -574,7 +574,6 @@ public class ESController {
 		Thread thread = new Thread(reIndexingThread);
 		thread.start();
 		return Response.status(Status.OK).build();
-//			return elasticAdminSearchService.reIndexObservation(indexDetails.get(0),indexDetails.get(1));
 	}
 	
 	
