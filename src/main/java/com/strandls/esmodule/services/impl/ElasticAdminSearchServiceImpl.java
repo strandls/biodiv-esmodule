@@ -4,20 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
-import javax.ws.rs.core.Response.Status;
+import javax.inject.Inject;
 
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.models.MapDocument;
@@ -115,7 +112,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 
 	@Override
-	public MapQueryResponse reIndexObservation(String index, String mapping) throws IOException {
+	public MapQueryResponse reIndex(String index, String mapping) throws IOException {
 		String filePath = "/app/configurations/scripts/";
 		String script = null;
 		Response response  = deleteIndex(index);

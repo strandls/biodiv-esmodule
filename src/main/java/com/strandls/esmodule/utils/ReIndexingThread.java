@@ -42,7 +42,7 @@ public class ReIndexingThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			elasticAdminSearchService.reIndexObservation(index, mapping);
+			elasticAdminSearchService.reIndex(index, mapping);
 		} catch (IOException e) {
 			logger.error(e.getMessage());	
 		}

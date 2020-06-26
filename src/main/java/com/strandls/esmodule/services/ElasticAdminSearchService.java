@@ -70,7 +70,7 @@ public interface ElasticAdminSearchService {
 	 * @return
 	 * @throws IOException
 	 */
-	MapQueryResponse reIndexObservation(String index, String mapping) throws IOException;
+	MapQueryResponse reIndex(String index, String mapping) throws IOException;
 	
 	
 	
