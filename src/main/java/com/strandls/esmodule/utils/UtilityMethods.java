@@ -46,7 +46,7 @@ public class UtilityMethods {
 	@SuppressWarnings("rawtypes")
 	public final Class getClass(String index) {
 		switch (index) {
-			case "etdi": return ExtendedTaxonDefinition.class;
+			case "etd": return ExtendedTaxonDefinition.class;
 			default: return null;
 		}
 	}

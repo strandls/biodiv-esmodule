@@ -855,7 +855,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
-
 		}
 		return matchedResults;
 	}
