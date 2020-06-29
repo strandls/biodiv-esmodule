@@ -665,7 +665,7 @@ public class ESController {
 				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField,
 						filter, utilityMethods.getClass(index));
 			}
-			if (index.equals("etdi")) {
+			if (index.equals("etd")) {
 				if (field.equals("name")) {
 					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
 				} else if (field.equals("common_name")) {
@@ -688,7 +688,7 @@ public class ESController {
 
 	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	public Response matchPhrase(@DefaultValue("etdi") @PathParam("index") String index,
+	public Response matchPhrase(@DefaultValue("etd") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
 			@DefaultValue("name") @QueryParam("scientificField") String scientificField,
 			@QueryParam("scientificText") String scientificText,
