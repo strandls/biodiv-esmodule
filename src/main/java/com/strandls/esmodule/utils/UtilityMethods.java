@@ -15,14 +15,14 @@ import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 
 public class UtilityMethods {
 	
-	public String getAggregationScoreScript(String score) {
-		switch(score) {
-		case "A": return Scripts.ActivityScore.getScript();
-		case "C" : return Scripts.ContentScore.getScript();
-		case "P" : return Scripts.ParticipateScore.getScript();
-		default : return null;
-		}
-	}
+//	public String getAggregationScoreScript(String score) {
+//		switch(score) {
+//		case "A": return Scripts.ActivityScore.getScript();
+//		case "C" : return Scripts.ContentScore.getScript();
+//		case "P" : return Scripts.ParticipateScore.getScript();
+//		default : return null;
+//		}
+//	}
 	
 	public String getEsIndexConstants(String index) {
 		return esIndexConstants.get(index);
@@ -46,7 +46,7 @@ public class UtilityMethods {
 	@SuppressWarnings("rawtypes")
 	public final Class getClass(String index) {
 		switch (index) {
-			case "etdi": return ExtendedTaxonDefinition.class;
+			case "etd": return ExtendedTaxonDefinition.class;
 			default: return null;
 		}
 	}
@@ -268,7 +268,7 @@ public class UtilityMethods {
 	@SuppressWarnings("serial")
 	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
 		{
-			put("etdi", "extended_taxon_definition");
+			put("etd", "extended_taxon_definition");
 			put("eo","extended_observation");
 			put("eaf","extended_activity_feed");
 		}

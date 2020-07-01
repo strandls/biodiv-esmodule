@@ -48,6 +48,7 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
+import com.strandls.esmodule.utils.ReIndexingThread;
 import com.strandls.esmodule.utils.UtilityMethods;
 
 import io.swagger.annotations.Api;
@@ -564,16 +565,18 @@ public class ESController {
 	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = Response.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
-	public MapQueryResponse reIndexObservation() {
-
-		try {
-			return elasticAdminSearchService.reIndexObservation();
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-			throw new WebApplicationException(
-					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
-		}
+	public Response reIndex(@QueryParam("index") String index) {
+		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
+		if(indexDetails.size() != 2)
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
+		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, 
+				indexDetails.get(0), indexDetails.get(1), logger);
+		Thread thread = new Thread(reIndexingThread);
+		thread.start();
+		return Response.status(Status.OK).build();
 	}
+	
+	
 
 	@POST
 	@Path(ApiConstants.MAPPING + "/{index}")
@@ -662,7 +665,7 @@ public class ESController {
 				records = elasticSearchService.autoCompletion(elasticIndex, elasticType, field, fieldText, filterField,
 						filter, utilityMethods.getClass(index));
 			}
-			if (index.equals("etdi")) {
+			if (index.equals("etd")) {
 				if (field.equals("name")) {
 					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
 				} else if (field.equals("common_name")) {
@@ -685,7 +688,7 @@ public class ESController {
 
 	@ApiOperation(value = "Match Phrase In Elastic", notes = "Returns Success Failure", response = ExtendedTaxonDefinition.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-	public Response matchPhrase(@DefaultValue("etdi") @PathParam("index") String index,
+	public Response matchPhrase(@DefaultValue("etd") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
 			@DefaultValue("name") @QueryParam("scientificField") String scientificField,
 			@QueryParam("scientificText") String scientificText,
