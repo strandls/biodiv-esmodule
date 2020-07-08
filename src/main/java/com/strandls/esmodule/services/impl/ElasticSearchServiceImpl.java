@@ -948,8 +948,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		List<String> results = new ArrayList<String>();
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		SearchResponse searchResponse = null;
-		SearchRequest searchRequest = new SearchRequest("extended_observation_test");
-		searchRequest.types("extended_records");
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
 
 		if (filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil")
 				|| filterOn.equalsIgnoreCase("tags")) {
