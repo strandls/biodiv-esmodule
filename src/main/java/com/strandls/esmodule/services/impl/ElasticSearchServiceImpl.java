@@ -948,8 +948,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		List<String> results = new ArrayList<String>();
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		SearchResponse searchResponse = null;
-		SearchRequest searchRequest = new SearchRequest("extended_observation_test");
-		searchRequest.types("extended_records");
+		SearchRequest searchRequest = new SearchRequest(index);
+		searchRequest.types(type);
 
 		if (filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil")
 				|| filterOn.equalsIgnoreCase("tags")) {
@@ -1033,13 +1033,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			String sortingValue, Integer topUser, String timeFilter) {
 		// For Filtering the records based on the time frame
 		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
-		QueryBuilder filterByDate = QueryBuilders.boolQuery().must
-				(QueryBuilders.boolQuery().filter(rangeFilter));
-		
+		QueryBuilder filterByDate = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().filter(rangeFilter));
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
 		searchSourceBuilder.aggregation(aggs);
-		if(timeFilter != null)
+		if (timeFilter != null)
 			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
@@ -1054,12 +1053,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 		// processAggregationResponse(searchRespone)
 		List<Integer> topUserIds = getUserIds(searchResponse);
-		
-		// added the must part in the previous below query builder 
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().
-				filter(QueryBuilders.termsQuery("author_id", topUserIds)).must
-				(QueryBuilders.boolQuery().filter(rangeFilter));
-		
+
+		// added the must part in the previous below query builder
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("author_id", topUserIds))
+				.must(QueryBuilders.boolQuery().filter(rangeFilter));
+
 		searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -1320,9 +1318,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private List<SpeciesGroup> getAggregationSpeciesGroup(Terms terms) {
 		List<SpeciesGroup> sGroup = new ArrayList<SpeciesGroup>();
 		for (Terms.Bucket b : terms.getBuckets()) {
-//			pattern = sgroupId | sgroupName
+//			pattern = sgroupId | sgroupName | sGroupOrder
 			String[] sGroupArray = b.getKeyAsString().split("\\|");
-			sGroup.add(new SpeciesGroup(Long.parseLong(sGroupArray[0]), sGroupArray[1]));
+			sGroup.add(
+					new SpeciesGroup(Long.parseLong(sGroupArray[0]), sGroupArray[1], Integer.parseInt(sGroupArray[2])));
 		}
 		return sGroup;
 	}

@@ -10,6 +10,7 @@ package com.strandls.esmodule.models;
 public class SpeciesGroup {
 	private Long id;
 	private String name;
+	private Integer order;
 
 	/**
 	 * 
@@ -21,11 +22,13 @@ public class SpeciesGroup {
 	/**
 	 * @param id
 	 * @param name
+	 * @param order
 	 */
-	public SpeciesGroup(Long id, String name) {
+	public SpeciesGroup(Long id, String name, Integer order) {
 		super();
 		this.id = id;
 		this.name = name;
+		this.order = order;
 	}
 
 	public Long getId() {
@@ -42,6 +45,14 @@ public class SpeciesGroup {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Integer getOrder() {
+		return order;
+	}
+
+	public void setOrder(Integer order) {
+		this.order = order;
 	}
 
 }
