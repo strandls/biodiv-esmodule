@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -1356,7 +1357,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				traitMap.put(Long.parseLong(traitArray[0]), traitMapped);
 			} else {
 				List<TraitValue> valueList = new ArrayList<TraitValue>();
-				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				String capitalizeWord = StringUtils.capitalize(traitArray[3]);
+				valueList.add(new TraitValue(capitalizeWord, traitArray[4]));
 				Traits traitsMapped = new Traits(Long.parseLong(traitArray[0]), traitArray[1], traitArray[2],
 						valueList);
 
