@@ -12,7 +12,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
+import javax.inject.Inject;
+
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -79,8 +80,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.inject.Inject;
-
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
@@ -1352,12 +1351,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			if (traitMap.containsKey(Long.parseLong(traitArray[0]))) {
 				Traits traitMapped = traitMap.get(Long.parseLong(traitArray[0]));
 				List<TraitValue> valueList = traitMapped.getTraitValues();
-				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				String capitalizeWord = toTitleCase(traitArray[3]);
+				valueList.add(new TraitValue(capitalizeWord, traitArray[4]));
 				traitMapped.setTraitValues(valueList);
 				traitMap.put(Long.parseLong(traitArray[0]), traitMapped);
 			} else {
 				List<TraitValue> valueList = new ArrayList<TraitValue>();
-				String capitalizeWord = StringUtils.capitalize(traitArray[3]);
+				String capitalizeWord = toTitleCase(traitArray[3]);
 				valueList.add(new TraitValue(capitalizeWord, traitArray[4]));
 				Traits traitsMapped = new Traits(Long.parseLong(traitArray[0]), traitArray[1], traitArray[2],
 						valueList);
@@ -1370,6 +1370,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			traits.add(entry.getValue());
 		}
 		return traits;
+	}
+
+	private String toTitleCase(String input) {
+		StringBuilder titleCase = new StringBuilder(input.length());
+		boolean nextTitleCase = true;
+
+		for (char c : input.toCharArray()) {
+			if (Character.isSpaceChar(c)) {
+				nextTitleCase = true;
+			} else if (nextTitleCase) {
+				c = Character.toTitleCase(c);
+				nextTitleCase = false;
+			}
+
+			titleCase.append(c);
+		}
+
+		return titleCase.toString();
 	}
 
 	private List<CustomFields> getCustomFields(Terms terms) {
