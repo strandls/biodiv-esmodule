@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -78,8 +80,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.inject.Inject;
-
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
@@ -1033,13 +1033,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			String sortingValue, Integer topUser, String timeFilter) {
 		// For Filtering the records based on the time frame
 		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
-		QueryBuilder filterByDate = QueryBuilders.boolQuery().must
-				(QueryBuilders.boolQuery().filter(rangeFilter));
-		
+		QueryBuilder filterByDate = QueryBuilders.boolQuery().must(QueryBuilders.boolQuery().filter(rangeFilter));
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		AggregationBuilder aggs = buildSortingAggregation(topUser, sortingValue);
 		searchSourceBuilder.aggregation(aggs);
-		if(timeFilter != null)
+		if (timeFilter != null)
 			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
@@ -1054,12 +1053,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 		// processAggregationResponse(searchRespone)
 		List<Integer> topUserIds = getUserIds(searchResponse);
-		
-		// added the must part in the previous below query builder 
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().
-				filter(QueryBuilders.termsQuery("author_id", topUserIds)).must
-				(QueryBuilders.boolQuery().filter(rangeFilter));
-		
+
+		// added the must part in the previous below query builder
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termsQuery("author_id", topUserIds))
+				.must(QueryBuilders.boolQuery().filter(rangeFilter));
+
 		searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -1275,7 +1273,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			AggregationBuilder userGroupAgregation = AggregationBuilders.terms("userGroup")
 					.field("user_group_observations.ug_filter.keyword").size(100).order(BucketOrder.count(false));
 			AggregationBuilder stateAggregation = AggregationBuilders.terms("state")
-					.field("location_information.state.keyword").size(100).order(BucketOrder.key(true));
+					.field("location_information.state.raw").size(100).order(BucketOrder.key(true));
 			AggregationBuilder traitAggregation = AggregationBuilders.terms("trait")
 					.field("facts.trait_value.trait_filter.keyword").size(1000).order(BucketOrder.key(true));
 			AggregationBuilder cfAggregation = AggregationBuilders.terms("customField")
@@ -1320,9 +1318,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	private List<SpeciesGroup> getAggregationSpeciesGroup(Terms terms) {
 		List<SpeciesGroup> sGroup = new ArrayList<SpeciesGroup>();
 		for (Terms.Bucket b : terms.getBuckets()) {
-//			pattern = sgroupId | sgroupName
+//			pattern = sgroupId | sgroupName | sGroupOrder
 			String[] sGroupArray = b.getKeyAsString().split("\\|");
-			sGroup.add(new SpeciesGroup(Long.parseLong(sGroupArray[0]), sGroupArray[1]));
+			sGroup.add(
+					new SpeciesGroup(Long.parseLong(sGroupArray[0]), sGroupArray[1], Integer.parseInt(sGroupArray[2])));
 		}
 		return sGroup;
 	}
@@ -1352,12 +1351,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			if (traitMap.containsKey(Long.parseLong(traitArray[0]))) {
 				Traits traitMapped = traitMap.get(Long.parseLong(traitArray[0]));
 				List<TraitValue> valueList = traitMapped.getTraitValues();
-				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				String capitalizeWord = toTitleCase(traitArray[3]);
+				valueList.add(new TraitValue(capitalizeWord, traitArray[4]));
 				traitMapped.setTraitValues(valueList);
 				traitMap.put(Long.parseLong(traitArray[0]), traitMapped);
 			} else {
 				List<TraitValue> valueList = new ArrayList<TraitValue>();
-				valueList.add(new TraitValue(traitArray[3], traitArray[4]));
+				String capitalizeWord = toTitleCase(traitArray[3]);
+				valueList.add(new TraitValue(capitalizeWord, traitArray[4]));
 				Traits traitsMapped = new Traits(Long.parseLong(traitArray[0]), traitArray[1], traitArray[2],
 						valueList);
 
@@ -1369,6 +1370,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			traits.add(entry.getValue());
 		}
 		return traits;
+	}
+
+	private String toTitleCase(String input) {
+		StringBuilder titleCase = new StringBuilder(input.length());
+		boolean nextTitleCase = true;
+
+		for (char c : input.toCharArray()) {
+			if (Character.isSpaceChar(c)) {
+				nextTitleCase = true;
+			} else if (nextTitleCase) {
+				c = Character.toTitleCase(c);
+				nextTitleCase = false;
+			}
+
+			titleCase.append(c);
+		}
+
+		return titleCase.toString();
 	}
 
 	private List<CustomFields> getCustomFields(Terms terms) {
