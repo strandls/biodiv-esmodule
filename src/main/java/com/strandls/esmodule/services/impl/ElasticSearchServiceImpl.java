@@ -897,13 +897,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificName,
-			String scientificText, String canonicalName, String canonicalText) {
+			String scientificText, String canonicalName, String canonicalText, Boolean checkOnAllParam) {
 
 		String scientificFieldName = "name.raw";
 		String canonicalFieldName = "canonical_form";
 
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));
+		if(checkOnAllParam == true) {
+		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));}
 		boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -1006,9 +1007,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId) {
+			Integer authorId,String timeFilter) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId));
+		
+		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);		
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId)).
+				must(QueryBuilders.boolQuery().filter(rangeFilter));
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
