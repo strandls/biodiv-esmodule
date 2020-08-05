@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.apache.lucene.index.Term;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -29,6 +30,7 @@ import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse.ShardInfo;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.geo.GeoDistance;
@@ -44,7 +46,14 @@ import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -1462,4 +1471,30 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return null;
 	}
 
+	@Override
+	public String forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
+		// get the observation id given datatable id - do this in observation index
+		// write the elastic query for force update of these fields
+		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
+		updateRequest.setConflicts("proceed");
+		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
+		updateRequest.setScript(
+			    new Script(
+			            ScriptType.INLINE, "painless",
+			            "ctx._source."+field+"="+value,
+			            Collections.emptyMap()));
+		updateRequest.setRefresh(true);
+		try {
+			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
+			if(response.getUpdated() == response.getTotal()){
+				logger.info("update status - "+response.getBulkFailures().toString());
+//				return 100*(response.getUpdated()/response.getTotal()) +"%"+" of documents found in index updated!!";
+				return "Documents Sent - "+documentIds.size()+"\nDocument found in index - "+response.getTotal()
+				+"\nDocument Updated - "+response.getUpdated();
+			}
+		} catch (IOException e) {
+			logger.error("Force Update Exception -"+e.getMessage());
+		}
+		return "failed to update documents";
+	}
 }
