@@ -43,6 +43,7 @@ public class ApiConstants {
 	public static final String FILTERS = "/filters";
 	public static final String SPECIES = "/species";
 	public static final String FORCEUPDATE = "forceupdateindex";
+	public static final String FETCHINDEX="fetchindex";
 	
 	// binning Controller
 	public static final String BINNING = "/binning";

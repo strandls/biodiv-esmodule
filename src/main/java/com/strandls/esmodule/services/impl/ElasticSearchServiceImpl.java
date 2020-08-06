@@ -9,12 +9,12 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.apache.lucene.index.Term;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -26,12 +26,15 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.action.support.replication.ReplicationResponse.ShardInfo;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.geo.GeoDistance;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -46,12 +49,9 @@ import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
@@ -1473,8 +1473,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public String forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
-		// get the observation id given datatable id - do this in observation index
-		// write the elastic query for force update of these fields
 		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
 		updateRequest.setConflicts("proceed");
 		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
@@ -1488,7 +1486,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
 			if(response.getUpdated() == response.getTotal()){
 				logger.info("update status - "+response.getBulkFailures().toString());
-//				return 100*(response.getUpdated()/response.getTotal()) +"%"+" of documents found in index updated!!";
 				return "Documents Sent - "+documentIds.size()+"\nDocument found in index - "+response.getTotal()
 				+"\nDocument Updated - "+response.getUpdated();
 			}
@@ -1496,5 +1493,33 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			logger.error("Force Update Exception -"+e.getMessage());
 		}
 		return "failed to update documents";
+	}
+	
+	@Override
+	public String fetchIndex() {
+		Map<String,Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
+		try {
+			GetMappingsRequest mappingsRequest = new GetMappingsRequest();
+			mappingsRequest.indices();
+			mappingsRequest.indicesOptions(IndicesOptions.lenientExpandOpen());
+			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest, RequestOptions.DEFAULT);
+			Map<String, MappingMetaData> allMappings = getMappingResponse.mappings();
+			
+			for (String index:allMappings.keySet()) {
+				if(!(index.startsWith("."))) {
+					MappingMetaData indexMapping = allMappings.get(index); 
+					Map<String, Object> mapping = indexMapping.sourceAsMap();
+					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping.get("properties");
+					if(properties != null) {
+						indexOuterLevelProperties.put(index, properties.keySet());
+				}
+			}
+		}
+			return objectMapper.writeValueAsString(indexOuterLevelProperties);
+		}
+		catch (IOException e) {
+			logger.error(e.getMessage());			
+		}
+		return null;
 	}
 }

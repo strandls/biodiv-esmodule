@@ -819,6 +819,7 @@ public class ESController {
 	@GET
 	@Path(ApiConstants.FORCEUPDATE)
 	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
 	@ApiOperation(value = "force update of field in elastic index",notes = "return succesful response",response = String.class)
 	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to make update",response = String.class)})
 	public Response forceUpdateIndexField(@QueryParam("index")String index, @QueryParam("type")String type,
@@ -832,5 +833,18 @@ public class ESController {
 				return Response.status(Status.BAD_REQUEST).entity(response).build();
 		else
 			return Response.status(Status.OK).entity(response).build();
+	}
+	
+	@GET
+	@Path(ApiConstants.FETCHINDEX)
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "fetch index information from elastic",notes = "return succesful response",response = String.class)
+	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to fetch index information",response = String.class)})
+	public Response fetchIndex() {
+		String response = elasticSearchService.fetchIndex();
+		if(response != null)
+			return Response.status(Status.OK).entity(response).build();
+		else 
+			return Response.status(Status.BAD_REQUEST).build();
 	}
 }
