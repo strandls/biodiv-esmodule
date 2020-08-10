@@ -257,7 +257,7 @@ public interface ElasticSearchService {
 	 * @return
 	 */
 	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificField, String scientificText,
-			String canonicalField, String canonicalText);
+			String canonicalField, String canonicalText, Boolean checkOnAllParam);
 	// List<String> getAutoSuggestionSearch(String index, String type, String){
 
 	/**
@@ -278,7 +278,7 @@ public interface ElasticSearchService {
 	 * @return
 	 */
 	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId);
+			Integer authorId,String timeFilter);
 
 	/**
 	 * @param index

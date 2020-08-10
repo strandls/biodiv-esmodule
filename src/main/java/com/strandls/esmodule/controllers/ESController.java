@@ -699,10 +699,14 @@ public class ESController {
 
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
+		Boolean checkOnAllParam = false;
+		if(!scientificText.isEmpty() || scientificText != null) {
+			checkOnAllParam = true;
+		}
 
 		try {
 			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField,
-					scientificText, canonicalField, canonicalText);
+					scientificText, canonicalField, canonicalText,checkOnAllParam);
 			if (records != null && records.size() > 1) {
 				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
 				return Response.status(Status.OK).entity(records.get(0)).build();
@@ -766,13 +770,20 @@ public class ESController {
 	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
-			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId) {
+			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId,
+			@DefaultValue("")@QueryParam("time") String timePeriod) {
 
+		String timeFilter = null;
+		if(timePeriod.isEmpty())
+			timePeriod = null;
+		else 
+			timeFilter = utilityMethods.getTimeWindow(timePeriod);
+		
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
 				elasticSearchService.getUserScore(index,
-				type, Integer.parseInt(authorId));
+				type, Integer.parseInt(authorId),timeFilter);
 		UserScore record = new UserScore();
 		record.setRecord(records);
 		return Response.status(Status.OK).entity(record).build();
