@@ -302,5 +302,8 @@ public interface ElasticSearchService {
 	public FilterPanelData getListPanel(String index, String type);
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
-
+	
+	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
+	
+	public String fetchIndex();
 }

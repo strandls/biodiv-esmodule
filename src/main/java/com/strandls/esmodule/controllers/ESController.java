@@ -1,6 +1,8 @@
 package com.strandls.esmodule.controllers;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -812,5 +814,37 @@ public class ESController {
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
+	}
+	
+	@GET
+	@Path(ApiConstants.FORCEUPDATE)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "force update of field in elastic index",notes = "return succesful response",response = String.class)
+	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to make update",response = String.class)})
+	public Response forceUpdateIndexField(@QueryParam("index")String index, @QueryParam("type")String type,
+			@QueryParam("field")String field, @QueryParam("value")String value, 
+			@QueryParam("ids")String ids) {
+		List<String>documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
+		index = utilityMethods.getEsIndexConstants(index);
+		type = utilityMethods.getEsIndexTypeConstant(type);
+		String response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
+		if(response.contains("fail"))
+				return Response.status(Status.BAD_REQUEST).entity(response).build();
+		else
+			return Response.status(Status.OK).entity(response).build();
+	}
+	
+	@GET
+	@Path(ApiConstants.FETCHINDEX)
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "fetch index information from elastic",notes = "return succesful response",response = String.class)
+	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to fetch index information",response = String.class)})
+	public Response fetchIndex() {
+		String response = elasticSearchService.fetchIndex();
+		if(response != null)
+			return Response.status(Status.OK).entity(response).build();
+		else 
+			return Response.status(Status.BAD_REQUEST).build();
 	}
 }
