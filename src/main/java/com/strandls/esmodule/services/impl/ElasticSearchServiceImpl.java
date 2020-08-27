@@ -1416,7 +1416,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				CustomFields customFieldMapped = customFieldMap.get(Long.parseLong(customFieldArray[0]));
 				List<CustomFieldValues> valueList = customFieldMapped.getValues();
 				if (!customFieldArray[2].equalsIgnoreCase("FIELD TEXT")) {
-					valueList.add(new CustomFieldValues(customFieldArray[4], customFieldArray[3]));
+					valueList.add(new CustomFieldValues(customFieldArray[5], customFieldArray[4]));
 				}
 				customFieldMapped.setValues(valueList);
 				customFieldMap.put(Long.parseLong(customFieldArray[0]), customFieldMapped);
@@ -1425,7 +1425,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				List<CustomFieldValues> values = null;
 				if (!customFieldArray[2].equalsIgnoreCase("FIELD TEXT")) {
 					values = new ArrayList<CustomFieldValues>();
-					values.add(new CustomFieldValues(customFieldArray[4], customFieldArray[3]));
+					values.add(new CustomFieldValues(customFieldArray[5], customFieldArray[4]));
 				}
 				CustomFields customFieldMapped = new CustomFields(Long.parseLong(customFieldArray[0]),
 						customFieldArray[1], customFieldArray[2], customFieldArray[3], values);
