@@ -44,7 +44,7 @@ public enum IndexMappingsConstants {
 					+ "\"tags.name\":{\"type\":\"completion\"},"
 					+ "\"location\":{\"type\":\"geo_point\"},"
 					+ "\"date\":{\"type\":\"date\",\"format\":\"yyyy-MM-dd\"},"
-					+ "\"custom_fields\":{\"type\":\"object\"}}}}}");
+					+ "\"custom_fields\":{\"type\":\"object\"},\"created_on\":{\"type\":\"date\"}}}}}");
 	
 	
 	private String mapping;

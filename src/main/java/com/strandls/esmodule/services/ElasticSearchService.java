@@ -8,6 +8,7 @@ import java.util.Map;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -303,7 +304,7 @@ public interface ElasticSearchService {
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
 	
-	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
+	public ForceUpdateResponse forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
 	
 	public String fetchIndex();
 }

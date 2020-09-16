@@ -33,6 +33,7 @@ import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
@@ -563,8 +564,8 @@ public class ESController {
 	@GET
 	@Path(ApiConstants.REINDEX)
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Mapping of Document", notes = "Returns Document", response = Response.class)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@ApiOperation(value = "Re-index Elastic Index", notes = "Runs thread and Returns OK", response = Response.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 
 	public Response reIndex(@QueryParam("index") String index) {
@@ -827,10 +828,10 @@ public class ESController {
 		}
 	}
 	
-	@GET
+	@POST
 	@Path(ApiConstants.FORCEUPDATE)
 	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "force update of field in elastic index",notes = "return succesful response",response = String.class)
 	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to make update",response = String.class)})
 	public Response forceUpdateIndexField(@QueryParam("index")String index, @QueryParam("type")String type,
@@ -839,8 +840,8 @@ public class ESController {
 		List<String>documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		String response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
-		if(response.contains("fail"))
+		ForceUpdateResponse response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
+		if(response == null)
 				return Response.status(Status.BAD_REQUEST).entity(response).build();
 		else
 			return Response.status(Status.OK).entity(response).build();

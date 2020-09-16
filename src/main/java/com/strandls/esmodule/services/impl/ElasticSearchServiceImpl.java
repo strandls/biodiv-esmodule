@@ -95,6 +95,7 @@ import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
@@ -1476,8 +1477,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public String forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
+	public ForceUpdateResponse forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
 		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
+//		System.out.println(documentIds.size());
+//		for(String s: documentIds) {
+//			System.out.println("ids = "+s);
+//		}
 		updateRequest.setConflicts("proceed");
 		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
 		updateRequest.setScript(
@@ -1490,13 +1495,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
 			if(response.getUpdated() == response.getTotal()){
 				logger.info("update status - "+response.getBulkFailures().toString());
-				return "Documents Sent - "+documentIds.size()+"\nDocument found in index - "+response.getTotal()
-				+"\nDocument Updated - "+response.getUpdated();
+				ForceUpdateResponse forceUpdateResponse = new ForceUpdateResponse((long) documentIds.size(),
+						response.getTotal(),response.getUpdated());
+				return forceUpdateResponse;
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
 			logger.error("Force Update Exception -"+e.getMessage());
 		}
-		return "failed to update documents";
+		return null;
 	}
 	
 	@Override
