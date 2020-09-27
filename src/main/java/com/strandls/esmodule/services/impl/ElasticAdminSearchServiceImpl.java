@@ -1,7 +1,10 @@
 package com.strandls.esmodule.services.impl;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.inject.Inject;
@@ -156,12 +159,20 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	private Integer startShellScriptProcess(String script, String filePath) {
 		Process process;
 		try {
-			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
-			int exitCode = process.waitFor();
-			return exitCode;
+			
+			ProcessBuilder pb = new ProcessBuilder(Arrays.asList("nohup", "sh", script));
+			pb.directory(new File(filePath));
+			pb.redirectErrorStream(false);
+			process = pb.start();
+
+//			int processStatus = process.waitFor();
+			String line = null;
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			while ((line = reader.readLine()) != null) {
+				logger.debug(line);// Ignore line, or do something with it
+			}
+			return 0;
 		} catch (IOException e) {
-			logger.error(e.getMessage());
-		} catch (InterruptedException e) {
 			logger.error(e.getMessage());
 		}
 		return -1;
