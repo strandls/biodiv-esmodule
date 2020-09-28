@@ -139,10 +139,13 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 				}
 			}
 			else if(index.equalsIgnoreCase("extended_observation_test")){
-				 script = "refreshObservationMV.sh";
+				 script = "refreshObservationMVTest.sh";
+				 System.out.println("\n\nrefreshObservationMVTest.sh\n\n");
 				 if(startShellScriptProcess(script, filePath)==0) {
-					script = "runObservationElasticMigration.sh";
-					if( status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
+					script = "runObservationElasticMigrationTest.sh";
+					System.out.println("\n\runObservationElasticMigrationTest.sh\n\n");
+					if( status.equalsIgnoreCase("ok") && startShellScriptProcessPB(script, filePath)==0) {
+						System.out.println("\n\nInside\n\n");
 						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
 					}
 				}
@@ -164,8 +167,22 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		
 	}
 	
-
 	private Integer startShellScriptProcess(String script, String filePath) {
+		Process process;
+		try {
+			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
+			int exitCode = process.waitFor();
+			return exitCode;
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+		}
+		return -1;
+	}
+	
+
+	private Integer startShellScriptProcessPB(String script, String filePath) {
 		Process process;
 		try {
 			
