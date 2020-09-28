@@ -138,6 +138,15 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 					}
 				}
 			}
+			else if(index.equalsIgnoreCase("extended_observation_test")){
+				 script = "refreshObservationMV.sh";
+				 if(startShellScriptProcess(script, filePath)==0) {
+					script = "runObservationElasticMigration.sh";
+					if( status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
+						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
+					}
+				}
+			}
 		}
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN,"re-indexing failure"); 
 	}
@@ -169,7 +178,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 			String line = null;
 			final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 			while ((line = reader.readLine()) != null) {
-				logger.debug(line);// Ignore line, or do something with it
+				System.out.println(line);// Ignore line, or do something with it
 			}
 			return 0;
 		} catch (IOException e) {

@@ -40,6 +40,9 @@ public class UtilityMethods {
 		else if(index.equalsIgnoreCase("eo")) {
 			indexMapping = IndexMappingsConstants.mappingOfObservationIndex.getMapping();
 		}
+		else if(index.equalsIgnoreCase("eot")) {
+			indexMapping = IndexMappingsConstants.mappingOfObservationIndex.getMapping();
+		}
 		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),indexMapping));
 	}
 	
@@ -271,6 +274,7 @@ public class UtilityMethods {
 			put("etd", "extended_taxon_definition");
 			put("eo","extended_observation");
 			put("eaf","extended_activity_feed");
+			put("eot", "extended_observation_test");
 		}
 	};
 }
