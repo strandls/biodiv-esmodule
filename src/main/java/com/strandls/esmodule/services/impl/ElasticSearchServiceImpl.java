@@ -92,6 +92,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
@@ -105,6 +106,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.MaxVotedReco;
+import com.strandls.esmodule.models.MaxVotedRecoFreq;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationMapInfo;
@@ -913,8 +915,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String canonicalFieldName = "canonical_form";
 
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-		if(checkOnAllParam == true) {
-		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));}
+		if (checkOnAllParam == true) {
+			boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));
+		}
 		boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -1017,12 +1020,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter) {
+			Integer authorId, String timeFilter) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
-		
-		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);		
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId)).
-				must(QueryBuilders.boolQuery().filter(rangeFilter));
+
+		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId))
+				.must(QueryBuilders.boolQuery().filter(rangeFilter));
+
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -1477,7 +1481,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public ForceUpdateResponse forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
+	public ForceUpdateResponse forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds) {
 		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
 //		System.out.println(documentIds.size());
 //		for(String s: documentIds) {
@@ -1485,52 +1490,112 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 //		}
 		updateRequest.setConflicts("proceed");
 		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
-		updateRequest.setScript(
-			    new Script(
-			            ScriptType.INLINE, "painless",
-			            "ctx._source."+field+"="+value,
-			            Collections.emptyMap()));
+		updateRequest.setScript(new Script(ScriptType.INLINE, "painless", "ctx._source." + field + "=" + value,
+				Collections.emptyMap()));
 		updateRequest.setRefresh(true);
 		try {
 			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
-			if(response.getUpdated() == response.getTotal()){
-				logger.info("update status - "+response.getBulkFailures().toString());
+			if (response.getUpdated() == response.getTotal()) {
+				logger.info("update status - " + response.getBulkFailures().toString());
 				ForceUpdateResponse forceUpdateResponse = new ForceUpdateResponse((long) documentIds.size(),
-						response.getTotal(),response.getUpdated());
+						response.getTotal(), response.getUpdated());
 				return forceUpdateResponse;
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-			logger.error("Force Update Exception -"+e.getMessage());
+			logger.error("Force Update Exception -" + e.getMessage());
 		}
 		return null;
 	}
-	
+
 	@Override
 	public String fetchIndex() {
-		Map<String,Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
 		try {
 			GetMappingsRequest mappingsRequest = new GetMappingsRequest();
 			mappingsRequest.indices();
 			mappingsRequest.indicesOptions(IndicesOptions.lenientExpandOpen());
-			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest, RequestOptions.DEFAULT);
+			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest,
+					RequestOptions.DEFAULT);
 			Map<String, MappingMetaData> allMappings = getMappingResponse.mappings();
-			
-			for (String index:allMappings.keySet()) {
-				if(!(index.startsWith("."))) {
-					MappingMetaData indexMapping = allMappings.get(index); 
+
+			for (String index : allMappings.keySet()) {
+				if (!(index.startsWith("."))) {
+					MappingMetaData indexMapping = allMappings.get(index);
 					Map<String, Object> mapping = indexMapping.sourceAsMap();
-					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping.get("properties");
-					if(properties != null) {
+					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping
+							.get("properties");
+					if (properties != null) {
 						indexOuterLevelProperties.put(index, properties.keySet());
+					}
 				}
 			}
-		}
 			return objectMapper.writeValueAsString(indexOuterLevelProperties);
-		}
-		catch (IOException e) {
-			logger.error(e.getMessage());			
+		} catch (IOException e) {
+			logger.error(e.getMessage());
 		}
 		return null;
+	}
+
+	@Override
+	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
+			Boolean hasMedia) {
+
+		try {
+
+			List<MaxVotedRecoFreq> maxVotedRecoFreqs = new ArrayList<MaxVotedRecoFreq>();
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+			BoolQueryBuilder authorQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", userId));
+
+			if (sGroup != null) {
+				BoolQueryBuilder sGroupQueryBuilder = QueryBuilders.boolQuery()
+						.must(QueryBuilders.termQuery("group_id", sGroup));
+				sourceBuilder.query(sGroupQueryBuilder);
+			}
+
+			if (hasMedia) {
+				BoolQueryBuilder mediaQueryBuilder = QueryBuilders.boolQuery()
+						.must(QueryBuilders.termQuery("no_media", 1));
+				sourceBuilder.query(mediaQueryBuilder);
+
+			}
+
+			AggregationBuilder uploadUniqueSpecies = AggregationBuilders.terms("uploadUniqueSpecies")
+					.field("max_voted_reco.id").size(10000).order(BucketOrder.count(false));
+
+			sourceBuilder.query(authorQueryBuilder);
+			sourceBuilder.aggregation(uploadUniqueSpecies);
+
+			SearchRequest request = new SearchRequest(index);
+			request.types(type);
+			request.source(sourceBuilder);
+
+			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+			Terms terms = response.getAggregations().get("uploadUniqueSpecies");
+			int count = 1;
+			for (Terms.Bucket b : terms.getBuckets()) {
+				if (count <= (size - 10))
+					count++;
+				else {
+					if (count > size)
+						break;
+					System.out.println(count);
+					maxVotedRecoFreqs.add(new MaxVotedRecoFreq(Long.parseLong(b.getKeyAsString()), b.getDocCount()));
+					count++;
+				}
+
+			}
+			Long total = response.getHits().totalHits;
+			AuthorUploadedObservationInfo result = new AuthorUploadedObservationInfo(total, maxVotedRecoFreqs);
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+
 	}
 }
