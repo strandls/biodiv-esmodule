@@ -7,12 +7,14 @@ import java.util.Map;
 
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
+import com.strandls.esmodule.models.MaxVotedRecoFreq;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
@@ -277,8 +279,8 @@ public interface ElasticSearchService {
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter);
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type, Integer authorId,
+			String timeFilter);
 
 	/**
 	 * @param index
@@ -302,8 +304,12 @@ public interface ElasticSearchService {
 	public FilterPanelData getListPanel(String index, String type);
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
-	
-	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
-	
+
+	public String forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds);
+
 	public String fetchIndex();
+
+	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
+			Boolean hasMedia);
 }

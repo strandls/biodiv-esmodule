@@ -32,6 +32,7 @@ import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
@@ -569,16 +570,14 @@ public class ESController {
 
 	public Response reIndex(@QueryParam("index") String index) {
 		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
-		if(indexDetails.size() != 2)
-			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
-		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, 
-				indexDetails.get(0), indexDetails.get(1), logger);
+		if (indexDetails.size() != 2)
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, indexDetails.get(0),
+				indexDetails.get(1), logger);
 		Thread thread = new Thread(reIndexingThread);
 		thread.start();
 		return Response.status(Status.OK).build();
 	}
-	
-	
 
 	@POST
 	@Path(ApiConstants.MAPPING + "/{index}")
@@ -700,13 +699,13 @@ public class ESController {
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		Boolean checkOnAllParam = false;
-		if(!scientificText.isEmpty() || scientificText != null) {
+		if (!scientificText.isEmpty() || scientificText != null) {
 			checkOnAllParam = true;
 		}
 
 		try {
 			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField,
-					scientificText, canonicalField, canonicalText,checkOnAllParam);
+					scientificText, canonicalField, canonicalText, checkOnAllParam);
 			if (records != null && records.size() > 1) {
 				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
 				return Response.status(Status.OK).entity(records.get(0)).build();
@@ -723,29 +722,27 @@ public class ESController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", 
-	response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
-			@DefaultValue("")@QueryParam("value") String sortingValue,
+			@DefaultValue("") @QueryParam("value") String sortingValue,
 			@DefaultValue("20") @QueryParam("how_many") String topUser,
-			@DefaultValue("")@QueryParam("time") String timePeriod) {
-		
+			@DefaultValue("") @QueryParam("time") String timePeriod) {
+
 		String timeFilter = null;
 		if (sortingValue.isEmpty())
 			sortingValue = null;
-		if(timePeriod.isEmpty())
+		if (timePeriod.isEmpty())
 			timePeriod = null;
-		else 
+		else
 			timeFilter = utilityMethods.getTimeWindow(timePeriod);
-		
+
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getTopUsers(index,type, sortingValue, 
-						Integer.parseInt(topUser),timeFilter);
+
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
+				type, sortingValue, Integer.parseInt(topUser), timeFilter);
 		return Response.status(Status.OK).entity(records).build();
 	}
 
@@ -771,19 +768,18 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
 			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId,
-			@DefaultValue("")@QueryParam("time") String timePeriod) {
+			@DefaultValue("") @QueryParam("time") String timePeriod) {
 
 		String timeFilter = null;
-		if(timePeriod.isEmpty())
+		if (timePeriod.isEmpty())
 			timePeriod = null;
-		else 
+		else
 			timeFilter = utilityMethods.getTimeWindow(timePeriod);
-		
+
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getUserScore(index,
-				type, Integer.parseInt(authorId),timeFilter);
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+				type, Integer.parseInt(authorId), timeFilter);
 		UserScore record = new UserScore();
 		record.setRecord(records);
 		return Response.status(Status.OK).entity(record).build();
@@ -826,36 +822,61 @@ public class ESController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@GET
 	@Path(ApiConstants.FORCEUPDATE)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.TEXT_PLAIN)
-	@ApiOperation(value = "force update of field in elastic index",notes = "return succesful response",response = String.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to make update",response = String.class)})
-	public Response forceUpdateIndexField(@QueryParam("index")String index, @QueryParam("type")String type,
-			@QueryParam("field")String field, @QueryParam("value")String value, 
-			@QueryParam("ids")String ids) {
-		List<String>documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
+	@ApiOperation(value = "force update of field in elastic index", notes = "return succesful response", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to make update", response = String.class) })
+	public Response forceUpdateIndexField(@QueryParam("index") String index, @QueryParam("type") String type,
+			@QueryParam("field") String field, @QueryParam("value") String value, @QueryParam("ids") String ids) {
+		List<String> documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		String response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
-		if(response.contains("fail"))
-				return Response.status(Status.BAD_REQUEST).entity(response).build();
+		if (response.contains("fail"))
+			return Response.status(Status.BAD_REQUEST).entity(response).build();
 		else
 			return Response.status(Status.OK).entity(response).build();
 	}
-	
+
 	@GET
 	@Path(ApiConstants.FETCHINDEX)
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "fetch index information from elastic",notes = "return succesful response",response = String.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to fetch index information",response = String.class)})
+	@ApiOperation(value = "fetch index information from elastic", notes = "return succesful response", response = String.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "Unable to fetch index information", response = String.class) })
 	public Response fetchIndex() {
 		String response = elasticSearchService.fetchIndex();
-		if(response != null)
+		if (response != null)
 			return Response.status(Status.OK).entity(response).build();
-		else 
+		else
 			return Response.status(Status.BAD_REQUEST).build();
+	}
+
+	@GET
+	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "fetch the observation uploaded freq by user", notes = "Returns the maxvotedId freq", response = AuthorUploadedObservationInfo.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the result", response = String.class) })
+
+	public Response getUploadUserInfo(@PathParam("index") String index, @PathParam("type") String type,
+			@PathParam("authorId") String authorId, @QueryParam("size") String size,
+			@QueryParam("sGroup") String sGroup, @QueryParam("hadMedia") Boolean hasMedia) {
+		try {
+			Long aId = Long.parseLong(authorId);
+			Integer Size = Integer.parseInt(size);
+			Long speciesGroup = null;
+			if (sGroup != null)
+				speciesGroup = Long.parseLong(sGroup);
+			AuthorUploadedObservationInfo result = elasticSearchService.getUserData(index, type, aId, Size,
+					speciesGroup, hasMedia);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 }
