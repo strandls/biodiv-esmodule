@@ -34,7 +34,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.geo.GeoDistance;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -60,16 +60,17 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGrid;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.missing.Missing;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
+import org.elasticsearch.search.aggregations.pipeline.BucketScriptPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
-import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
-import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
-import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.GeoDistanceSortBuilder;
@@ -416,7 +417,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		List<MapDocument> result = new ArrayList<>();
 
-		long totalHits = searchResponse.getHits().getTotalHits();
+		long totalHits = searchResponse.getHits().getTotalHits().value;
 
 		for (SearchHit hit : searchResponse.getHits().getHits())
 			result.add(new MapDocument(hit.getSourceAsString()));
@@ -932,7 +933,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			logger.error(e.getMessage());
 		}
 
-		if (searchResponse.getHits().getTotalHits() == 0) {
+		if (searchResponse.getHits().getTotalHits().value == 0) {
 			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery(canonicalFieldName,
 					canonicalText);
 			try {
@@ -944,7 +945,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 		}
 
-		if (searchResponse.getHits().getTotalHits() == 0)
+		if (searchResponse.getHits().getTotalHits().value == 0)
 			return null;
 
 		return processElasticResponse(searchResponse);
@@ -1258,13 +1259,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchRequest.types(type);
 			searchRequest.source(sourceBuilder);
 			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-			Long totalCount = searchResponse.getHits().getTotalHits();
+			Long totalCount = searchResponse.getHits().getTotalHits().value;
 			Map<String, Long> geoHashData = new HashMap<String, Long>();
 
 			Aggregations aggregations = searchResponse.getAggregations();
 			ParsedGeoHashGrid geoHashGrid = aggregations.get(geoAggregationField + "-" + geoAggegationPrecision);
 
-			for (org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket b : geoHashGrid.getBuckets()) {
+			for (GeoGrid.Bucket b : geoHashGrid.getBuckets()) {
 				geoHashData.put(b.getKeyAsString(), b.getDocCount());
 			}
 
@@ -1507,11 +1508,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			mappingsRequest.indices();
 			mappingsRequest.indicesOptions(IndicesOptions.lenientExpandOpen());
 			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest, RequestOptions.DEFAULT);
-			Map<String, MappingMetaData> allMappings = getMappingResponse.mappings();
+			Map<String, MappingMetadata> allMappings = getMappingResponse.mappings();
 			
 			for (String index:allMappings.keySet()) {
 				if(!(index.startsWith("."))) {
-					MappingMetaData indexMapping = allMappings.get(index); 
+					MappingMetadata indexMapping = allMappings.get(index); 
 					Map<String, Object> mapping = indexMapping.sourceAsMap();
 					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping.get("properties");
 					if(properties != null) {

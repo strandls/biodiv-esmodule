@@ -78,7 +78,7 @@ public class GeojsonServiceImpl implements GeojsonService {
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-		return searchResponse.getHits().getTotalHits();
+		return searchResponse.getHits().getTotalHits().value;
 	}
 
 }

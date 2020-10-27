@@ -20,10 +20,10 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket;
+import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGrid;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
-import org.elasticsearch.search.aggregations.metrics.geobounds.GeoBounds;
-import org.elasticsearch.search.aggregations.metrics.geobounds.GeoBoundsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.GeoBounds;
+import org.elasticsearch.search.aggregations.metrics.GeoBoundsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		List<MapDocument> result = new ArrayList<>();
 
-		long totalHits = searchResponse.getHits().getTotalHits();
+		long totalHits = searchResponse.getHits().getTotalHits().value;
 
 		for (SearchHit hit : searchResponse.getHits().getHits())
 			result.add(new MapDocument(hit.getSourceAsString()));
@@ -132,7 +132,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
 
 			Map<String, Long> hashToCount = new HashMap<String, Long>();
-			for (Bucket b : geoHashGrid.getBuckets()) {
+			for (GeoGrid.Bucket b : geoHashGrid.getBuckets()) {
 				hashToCount.put(b.getKeyAsString(), b.getDocCount());
 			}
 			return hashToCount;
@@ -205,7 +205,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		ParsedGeoHashGrid geoHashGrid = aggregations.get("agg");
 
 		Map<String, Long> hashToCount = new HashMap<String, Long>();
-		for (Bucket b : geoHashGrid.getBuckets()) {
+		for (GeoGrid.Bucket b : geoHashGrid.getBuckets()) {
 			hashToCount.put(b.getKeyAsString(), b.getDocCount());
 		}
 		return hashToCount;
