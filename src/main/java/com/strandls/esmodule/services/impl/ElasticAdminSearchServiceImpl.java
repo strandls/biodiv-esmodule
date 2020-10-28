@@ -2,7 +2,6 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 
 import javax.inject.Inject;
 

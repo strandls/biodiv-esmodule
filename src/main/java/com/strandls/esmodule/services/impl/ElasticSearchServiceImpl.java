@@ -149,7 +149,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to create index: {}, type: {} & id: {}", index, type, documentId);
 
-		IndexRequest request = new IndexRequest(index, type, documentId);
+		IndexRequest request = new IndexRequest(index);
+		request.id(documentId);
 		request.source(document, XContentType.JSON);
 		// IndexResponse indexResponse = client.index(request); DEPRECATED
 		IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
@@ -185,7 +186,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to fetch index: {}, type: {} & id: {}", index, type, documentId);
 
-		GetRequest request = new GetRequest(index, type, documentId);
+		GetRequest request = new GetRequest(index, documentId);
 		GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
 		logger.info("Fetched index: {}, type: {} & id: {} with status {}", index, type, documentId,
@@ -207,7 +208,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to update index: {}, type: {} & id: {}", index, type, documentId);
 
-		UpdateRequest request = new UpdateRequest(index, type, documentId);
+		UpdateRequest request = new UpdateRequest(index, documentId);
 		request.doc(document);
 		UpdateResponse updateResponse = client.update(request, RequestOptions.DEFAULT);
 		ShardInfo shardInfo = updateResponse.getShardInfo();
@@ -239,7 +240,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to delete index: {}, type: {} & id: {}", index, type, documentId);
 
-		DeleteRequest request = new DeleteRequest(index, type, documentId);
+		DeleteRequest request = new DeleteRequest(index, documentId);
 		DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
 		ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
 
@@ -300,10 +301,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		BulkRequest request = new BulkRequest();
 
-		for (JsonNode json : jsons)
-			request.add(
-					new IndexRequest(index, type, json.get("id").asText()).source(json.toString(), XContentType.JSON));
+		for (JsonNode json : jsons) {
+			IndexRequest ir = new IndexRequest(index);
+			ir.id(json.get("id").asText());
+			ir.source(json.toString(), XContentType.JSON);
+			request.add(ir);
 
+		}
 		// BulkResponse bulkResponse = client.bulk(request);
 		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 		for (BulkItemResponse bulkItemResponse : bulkResponse) {
@@ -347,7 +351,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		BulkRequest request = new BulkRequest();
 
 		for (Map<String, Object> doc : updateDocs)
-			request.add(new UpdateRequest(index, type, doc.get("id").toString()).doc(doc));
+			request.add(new UpdateRequest(index, doc.get("id").toString()).doc(doc));
 
 		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 
@@ -410,7 +414,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 		// SearchResponse searchResponse = client.search(searchRequest);
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -658,7 +661,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.aggregation(aggQuery);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -689,7 +691,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.aggregation(aggQuery);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
@@ -731,7 +732,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -783,7 +783,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -852,7 +851,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchResponse searchResponse = null;
 		try {
 			searchSourceBuilder.query(query);
-			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		} catch (Exception e) {
@@ -888,7 +886,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchResponse searchResponse = null;
 		try {
 			searchSourceBuilder.query(query);
-			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
 			// searchResponse = client.search(searchRequest);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -923,7 +920,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		SearchResponse searchResponse = null;
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		try {
 			searchSourceBuilder.query(boolQueryBuilder);
 			searchRequest.source(searchSourceBuilder);
@@ -960,7 +956,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		SearchResponse searchResponse = null;
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 
 		if (filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil")
 				|| filterOn.equalsIgnoreCase("tags")) {
@@ -1031,7 +1026,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		searchSourceBuilder.query(queryBuilder);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		SearchResponse searchResponse = null;
 		searchRequest.source(searchSourceBuilder);
 		try {
@@ -1056,7 +1050,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
 
 		SearchResponse searchResponse = null;
@@ -1256,7 +1249,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(geoGridAggregationBuilder);
 
 			SearchRequest searchRequest = new SearchRequest(index);
-			searchRequest.types(type);
 			searchRequest.source(sourceBuilder);
 			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 			Long totalCount = searchResponse.getHits().getTotalHits().value;
@@ -1302,7 +1294,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(cfAggregation);
 
 			SearchRequest request = new SearchRequest(index);
-			request.types(type);
 			request.source(sourceBuilder);
 
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -1453,7 +1444,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			String[] includes = { "observation_id", "location" };
 			sourceBuilder.fetchSource(includes, null);
 			SearchRequest request = new SearchRequest(index);
-			request.types(type);
 			request.source(sourceBuilder);
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 			List<ObservationLatLon> obvList = new ArrayList<ObservationLatLon>();

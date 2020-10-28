@@ -56,7 +56,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		sourceBuilder.size(500);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -123,7 +122,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		searchSourceBuilder.aggregation(aggregationBuilder);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
 
 		try {
@@ -146,7 +144,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	public List<List<Double>> getGeoBounds(String jsonString) throws IOException {
 		JSONObject jsonObject = new JSONObject(jsonString);
 		String index = jsonObject.getString("index");
-		String type = jsonObject.getString("type");
 
 		BoolQueryBuilder boolqueryBuilder = getBooleanSearchQuery(jsonString);
 
@@ -157,7 +154,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		searchSourceBuilder.aggregation(aggregation);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -183,7 +179,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	public Map<String, Long> getGeoAggregation(String jsonString) throws IOException {
 		JSONObject jsonObject = new JSONObject(jsonString);
 		String index = jsonObject.getString("index");
-		String type = jsonObject.getString("type");
 		String geoField = jsonObject.getString("geoField");
 
 		Integer precision = jsonObject.getInt("precision");
@@ -197,7 +192,6 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		searchSourceBuilder.aggregation(aggregationBuilder);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
