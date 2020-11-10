@@ -1545,28 +1545,22 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			List<MaxVotedRecoFreq> maxVotedRecoFreqs = new ArrayList<MaxVotedRecoFreq>();
 
-			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-
-			BoolQueryBuilder authorQueryBuilder = QueryBuilders.boolQuery()
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
 					.must(QueryBuilders.termQuery("author_id", userId));
 
 			if (sGroup != null) {
-				BoolQueryBuilder sGroupQueryBuilder = QueryBuilders.boolQuery()
-						.must(QueryBuilders.termQuery("group_id", sGroup));
-				sourceBuilder.query(sGroupQueryBuilder);
+				boolQueryBuilder.must(QueryBuilders.termQuery("group_id", sGroup));
 			}
 
 			if (hasMedia) {
-				BoolQueryBuilder mediaQueryBuilder = QueryBuilders.boolQuery()
-						.must(QueryBuilders.termQuery("no_media", 1));
-				sourceBuilder.query(mediaQueryBuilder);
-
+				boolQueryBuilder.must(QueryBuilders.termQuery("no_media", 0));
 			}
 
 			AggregationBuilder uploadUniqueSpecies = AggregationBuilders.terms("uploadUniqueSpecies")
 					.field("max_voted_reco.id").size(10000).order(BucketOrder.count(false));
 
-			sourceBuilder.query(authorQueryBuilder);
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
 			sourceBuilder.aggregation(uploadUniqueSpecies);
 
 			SearchRequest request = new SearchRequest(index);
