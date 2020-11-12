@@ -1550,7 +1550,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 
 			AggregationBuilder uploadUniqueSpecies = AggregationBuilders.terms("uploadUniqueSpecies")
-					.field("max_voted_reco.id").size(10000).order(BucketOrder.count(false));
+					.field("max_voted_reco.id").size(50000).order(BucketOrder.count(false));
 
 			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 			sourceBuilder.query(boolQueryBuilder);
@@ -1575,7 +1575,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				}
 
 			}
-			Long total = response.getHits().totalHits;
+			Long total = Long.parseLong(String.valueOf(terms.getBuckets().size()));
 			AuthorUploadedObservationInfo result = new AuthorUploadedObservationInfo(total, maxVotedRecoFreqs);
 			return result;
 
