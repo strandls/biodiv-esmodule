@@ -303,7 +303,7 @@ public interface ElasticSearchService {
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
 
-	public ForceUpdateResponse forceUpdateIndexField(String index, String type, String field, String value,
+	public String forceUpdateIndexField(String index, String type, String field, String value,
 			List<String> documentIds);
 
 	public String fetchIndex();
