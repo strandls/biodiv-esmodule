@@ -224,7 +224,6 @@ public interface ElasticSearchService {
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
 
-//	MapQueryResponse autoSuggestor(String index, String type, String field, String text);
 
 	/**
 	 * @param index  : index to be searched upon
@@ -258,7 +257,6 @@ public interface ElasticSearchService {
 	 */
 	List<ExtendedTaxonDefinition> matchPhrase(String index, String type, String scientificField, String scientificText,
 			String canonicalField, String canonicalText, Boolean checkOnAllParam);
-	// List<String> getAutoSuggestionSearch(String index, String type, String){
 
 	/**
 	 * @param index

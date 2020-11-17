@@ -45,6 +45,9 @@ public class ReIndexingThread implements Runnable {
 			elasticAdminSearchService.reIndex(index, mapping);
 		} catch (IOException e) {
 			logger.error(e.getMessage());	
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+			Thread.currentThread().interrupt();
 		}
 	}
 

@@ -14,15 +14,18 @@ import com.strandls.esmodule.indexes.pojo.CommonName;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 
 public class UtilityMethods {
+
+	private static final HashMap<String, String> esIndexTypeConstant = new HashMap<String, String>();
 	
-//	public String getAggregationScoreScript(String score) {
-//		switch(score) {
-//		case "A": return Scripts.ActivityScore.getScript();
-//		case "C" : return Scripts.ContentScore.getScript();
-//		case "P" : return Scripts.ParticipateScore.getScript();
-//		default : return null;
-//		}
-//	}
+	private static final HashMap<String, String> esIndexConstants = new HashMap<String, String>();
+	
+	static {
+		esIndexConstants.put("etd", "extended_taxon_definition");
+		esIndexConstants.put("eo","extended_observation");
+		esIndexConstants.put("eaf","extended_activity_feed");
+		
+		esIndexTypeConstant.put("er","extended_records");
+	}
 	
 	public String getEsIndexConstants(String index) {
 		return esIndexConstants.get(index);
@@ -38,25 +41,25 @@ public class UtilityMethods {
 			indexMapping = IndexMappingsConstants.valueOf("mappingOnFieldNameAndCommonName").getMapping();
 		}
 		else if(index.equalsIgnoreCase("eo")) {
-			indexMapping = IndexMappingsConstants.mappingOfObservationIndex.getMapping();
+			indexMapping = IndexMappingsConstants.MAPPING_OBSERVATION_INDEX.getMapping();
 		}
-		return new ArrayList<String>(Arrays.asList(esIndexConstants.get(index),indexMapping));
+		return new ArrayList<>(Arrays.asList(esIndexConstants.get(index),indexMapping));
 	}
 	
 	@SuppressWarnings("rawtypes")
 	public final Class getClass(String index) {
-		switch (index) {
-			case "etd": return ExtendedTaxonDefinition.class;
-			default: return null;
+		if (index.equalsIgnoreCase("etd")) {
+			return ExtendedTaxonDefinition.class;
 		}
+		return null;
 	}
 	
 	@SuppressWarnings("unlikely-arg-type")
 	public final List<ExtendedTaxonDefinition> rankDocument(List<ExtendedTaxonDefinition> records, String field,
 			String fieldText) {
 		int listIndex = 0;
-		HashMap<Integer, Integer> indexScores = new HashMap<Integer, Integer>();
-		List<Integer> negativeScoreIndexes = new ArrayList<Integer>();
+		HashMap<Integer, Integer> indexScores = new HashMap<>();
+		List<Integer> negativeScoreIndexes = new ArrayList<>();
 		boolean isCanonical = false;
 		if(field.equalsIgnoreCase("canonical_form"))
 			isCanonical = true;
@@ -70,12 +73,12 @@ public class UtilityMethods {
 			String position = record.getPosition();
 			String speciesName = record.getSpecies_title();
 			
-			ArrayList<String> fieldTextSpaceSplit = new ArrayList<String>(Arrays.asList(fieldText.toLowerCase().split(" ")));
+			ArrayList<String> fieldTextSpaceSplit = new ArrayList<>(Arrays.asList(fieldText.toLowerCase().split(" ")));
 	        ArrayList<String> nameListSpaceSplit = new ArrayList<>(Arrays.asList(name.toLowerCase().split(" ")));
 			
 			fieldTextSpaceSplit.retainAll(nameListSpaceSplit);
 			
-			if(fieldTextSpaceSplit.size() >0 ) {
+			if(fieldTextSpaceSplit.isEmpty()) {
 				
 				score += fieldTextSpaceSplit.size()*5;
 				patternMatched = true;
@@ -124,23 +127,23 @@ public class UtilityMethods {
 		records.removeAll(negativeScoreIndexes);
 		
 		LinkedHashMap<Integer, Integer> rankedIndex = sortHashMaponValue(indexScores);
-		ArrayList<Integer> orderedIndexes = new ArrayList<Integer>(rankedIndex.keySet());
+		ArrayList<Integer> orderedIndexes = new ArrayList<>(rankedIndex.keySet());
 		return orderDocuments(orderedIndexes, records);
 	}
 
 	
-	public final List<ExtendedTaxonDefinition> rankDocumentBasedOnCommonName(List<ExtendedTaxonDefinition>records, String field, 
+	public final List<ExtendedTaxonDefinition> rankDocumentBasedOnCommonName(List<ExtendedTaxonDefinition>records, 
 			String fieldText){
 		
 		int listIndex = 0;
-		HashMap<Integer, Integer> indexScores = new HashMap<Integer, Integer>();
+		HashMap<Integer, Integer> indexScores = new HashMap<>();
 		
 		for (ExtendedTaxonDefinition record : records) {
 			int score = 0;
 			int commonNameIndex = 0;
 			List<CommonName> commonNames = record.getCommon_names();
-			List<CommonName> matchedCommonRecords = new ArrayList<CommonName>();
-			HashMap<Integer, Integer> commonNameIndexScores = new HashMap<Integer, Integer>();
+			List<CommonName> matchedCommonRecords = new ArrayList<>();
+			HashMap<Integer, Integer> commonNameIndexScores = new HashMap<>();
 			
 			for (CommonName commonName :commonNames ) {
 				int cscore = 0;
@@ -222,8 +225,9 @@ public class UtilityMethods {
 				return now.minusMonths(3).toString();
 		case "year": // past year
 			return now.minusYears(1).toString();
+		default: 
+			return null;
 		}
-		return null;
 	}
 	
 	private LinkedHashMap<Integer, Integer> sortHashMaponValue(HashMap<Integer, Integer> indexScores) {
@@ -255,22 +259,4 @@ public class UtilityMethods {
 		return orderedDocuments;
 	}
 	
-
-	
-	@SuppressWarnings("serial")
-	private static final HashMap<String, String> esIndexTypeConstant = new HashMap<String, String>(){
-		{
-			put("er","extended_records");	
-		}
-	};
-	
-	
-	@SuppressWarnings("serial")
-	private static final HashMap<String, String>esIndexConstants = new HashMap<String, String>(){
-		{
-			put("etd", "extended_taxon_definition");
-			put("eo","extended_observation");
-			put("eaf","extended_activity_feed");
-		}
-	};
 }

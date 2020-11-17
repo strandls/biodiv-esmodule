@@ -69,8 +69,9 @@ public interface ElasticAdminSearchService {
 	 * @param mapping
 	 * @return
 	 * @throws IOException
+	 * @throws InterruptedException 
 	 */
-	MapQueryResponse reIndex(String index, String mapping) throws IOException;
+	MapQueryResponse reIndex(String index, String mapping) throws IOException, InterruptedException;
 	
 	
 	
