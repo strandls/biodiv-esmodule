@@ -415,6 +415,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(getGeoGridAggregationBuilder(geoAggregationField, geoAggegationPrecision));
 		}
 
+		sourceBuilder.trackTotalHits(true);
 		SearchRequest searchRequest = new SearchRequest(index);
 		searchRequest.source(sourceBuilder);
 		// SearchResponse searchResponse = client.search(searchRequest);
@@ -912,8 +913,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String canonicalFieldName = "canonical_form";
 
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-		if(checkOnAllParam == true) {
-		boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));}
+		if (checkOnAllParam == true) {
+			boolQueryBuilder.must(QueryBuilders.matchQuery(scientificFieldName, scientificText).operator(Operator.AND));
+		}
 		boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(canonicalFieldName, canonicalText));
 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -1014,12 +1016,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter) {
+			Integer authorId, String timeFilter) {
 		AggregationBuilder aggs = buildSortingAggregation(1, null);
-		
-		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);		
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId)).
-				must(QueryBuilders.boolQuery().filter(rangeFilter));
+
+		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
+		QueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(QueryBuilders.termQuery("author_id", authorId))
+				.must(QueryBuilders.boolQuery().filter(rangeFilter));
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		aggs.subAggregation(populateDataAggregation());
 		aggs.subAggregation(termsAggregation("profile_pic", "profile_pic.keyword"));
@@ -1469,57 +1471,56 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public String forceUpdateIndexField(String index, String type, String field, String value, List<String> documentIds) {
+	public String forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds) {
 		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
 		updateRequest.setConflicts("proceed");
 		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
-		updateRequest.setScript(
-			    new Script(
-			            ScriptType.INLINE, "painless",
-			            "ctx._source."+field+"="+value,
-			            Collections.emptyMap()));
+		updateRequest.setScript(new Script(ScriptType.INLINE, "painless", "ctx._source." + field + "=" + value,
+				Collections.emptyMap()));
 		updateRequest.setRefresh(true);
 		try {
 			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
-			if(response.getUpdated() == response.getTotal()){
-				logger.info("update status - "+response.getBulkFailures().toString());
-				return "Documents Sent - "+documentIds.size()+"\nDocument found in index - "+response.getTotal()
-				+"\nDocument Updated - "+response.getUpdated();
+			if (response.getUpdated() == response.getTotal()) {
+				logger.info("update status - " + response.getBulkFailures().toString());
+				return "Documents Sent - " + documentIds.size() + "\nDocument found in index - " + response.getTotal()
+						+ "\nDocument Updated - " + response.getUpdated();
 			}
 		} catch (IOException e) {
-			logger.error("Force Update Exception -"+e.getMessage());
+			logger.error("Force Update Exception -" + e.getMessage());
 		}
 		return "failed to update documents";
 	}
-	
+
 	@Override
 	public String fetchIndex() {
-		Map<String,Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
 		try {
 			GetMappingsRequest mappingsRequest = new GetMappingsRequest();
 			mappingsRequest.indices();
 			mappingsRequest.indicesOptions(IndicesOptions.lenientExpandOpen());
-			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest, RequestOptions.DEFAULT);
+			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest,
+					RequestOptions.DEFAULT);
 			Map<String, MappingMetadata> allMappings = getMappingResponse.mappings();
-			
-			for (String index:allMappings.keySet()) {
-				if(!(index.startsWith("."))) {
-					MappingMetadata indexMapping = allMappings.get(index); 
+
+			for (String index : allMappings.keySet()) {
+				if (!(index.startsWith("."))) {
+					MappingMetadata indexMapping = allMappings.get(index);
 					Map<String, Object> mapping = indexMapping.sourceAsMap();
-					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping.get("properties");
-					if(properties != null) {
+					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping
+							.get("properties");
+					if (properties != null) {
 						indexOuterLevelProperties.put(index, properties.keySet());
+					}
 				}
 			}
-		}
 			return objectMapper.writeValueAsString(indexOuterLevelProperties);
-		}
-		catch (IOException e) {
-			logger.error(e.getMessage());			
+		} catch (IOException e) {
+			logger.error(e.getMessage());
 		}
 		return null;
 	}
-	
+
 	@Override
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
 			Boolean hasMedia) {
