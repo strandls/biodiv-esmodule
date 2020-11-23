@@ -93,6 +93,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
@@ -105,6 +106,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.MaxVotedReco;
+import com.strandls.esmodule.models.MaxVotedRecoFreq;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationMapInfo;
@@ -1516,5 +1518,60 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			logger.error(e.getMessage());			
 		}
 		return null;
+	}
+	
+	@Override
+	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
+			Boolean hasMedia) {
+
+		try {
+
+			List<MaxVotedRecoFreq> maxVotedRecoFreqs = new ArrayList<MaxVotedRecoFreq>();
+
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", userId));
+
+			if (sGroup != null) {
+				boolQueryBuilder.must(QueryBuilders.termQuery("group_id", sGroup));
+			}
+
+			if (hasMedia) {
+				boolQueryBuilder.must(QueryBuilders.termQuery("no_media", 0));
+			}
+
+			AggregationBuilder uploadUniqueSpecies = AggregationBuilders.terms("uploadUniqueSpecies")
+					.field("max_voted_reco.id").size(50000).order(BucketOrder.count(false));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.aggregation(uploadUniqueSpecies);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+
+			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+			Terms terms = response.getAggregations().get("uploadUniqueSpecies");
+			int count = 1;
+			for (Terms.Bucket b : terms.getBuckets()) {
+				if (count <= (size - 10))
+					count++;
+				else {
+					if (count > size)
+						break;
+					System.out.println(count);
+					maxVotedRecoFreqs.add(new MaxVotedRecoFreq(Long.parseLong(b.getKeyAsString()), b.getDocCount()));
+					count++;
+				}
+
+			}
+			Long total = Long.parseLong(String.valueOf(terms.getBuckets().size()));
+			AuthorUploadedObservationInfo result = new AuthorUploadedObservationInfo(total, maxVotedRecoFreqs);
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+
 	}
 }

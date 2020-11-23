@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
@@ -306,4 +307,7 @@ public interface ElasticSearchService {
 	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
 	
 	public String fetchIndex();
+	
+	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
+			Boolean hasMedia);
 }
