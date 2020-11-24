@@ -260,7 +260,7 @@ public class UtilityMethods {
 	@SuppressWarnings("serial")
 	private static final HashMap<String, String> esIndexTypeConstant = new HashMap<String, String>(){
 		{
-			put("er","extended_records");	
+			put("er","_doc");	
 		}
 	};
 	

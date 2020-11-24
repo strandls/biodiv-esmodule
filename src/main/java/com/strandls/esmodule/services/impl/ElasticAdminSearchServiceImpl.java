@@ -2,7 +2,6 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 
 import javax.inject.Inject;
 
@@ -53,7 +52,9 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 			entity = new StringEntity(mapping, ContentType.APPLICATION_JSON);
 		}
 
-		Response response = client.performRequest("PUT", index + "/_mapping", new HashMap<>(), entity);
+		Request request = new Request("PUT", index + "/_mapping");
+		request.setEntity(entity);
+		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
 		logger.info("Added mapping to index: {} with status: {}", index, status);
@@ -69,8 +70,9 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	public MapDocument getMapping(String index) throws IOException {
 
 		logger.info("Trying to get mapping for index: {}", index);
-
-		Response response = client.performRequest("GET", index + "/_mapping");
+		
+		Request request = new Request("GET", index + "/_mapping");
+		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
 		logger.info("Retrieved mapping for index: {} with status: {}", index, status);
@@ -87,7 +89,8 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 		logger.info("Trying to create index: {}", index);
 
-		Response response = client.performRequest("PUT", "/" + index);
+		Request request = new Request("PUT", "/" + index);
+		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
 		logger.info("Created index: {} with status: {}", index, status);
@@ -103,7 +106,9 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		if (!Strings.isNullOrEmpty(mapping)) {
 			entity = new StringEntity(mapping, ContentType.APPLICATION_JSON);
 		}
-		Response response = client.performRequest("PUT", index+"/", new HashMap<>(), entity);
+		Request request = new Request("PUT", index+"/");
+		request.setEntity(entity);
+		Response response = client.performRequest(request);
 		
 		String status = response.getStatusLine().getReasonPhrase();
 		
