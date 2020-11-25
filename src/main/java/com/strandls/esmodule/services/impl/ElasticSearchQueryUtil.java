@@ -1,15 +1,22 @@
 package com.strandls.esmodule.services.impl;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
+import org.elasticsearch.common.geo.builders.MultiPointBuilder;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
+import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -172,10 +179,11 @@ public class ElasticSearchQueryUtil {
 				masterBoolQuery);
 		return masterBoolQuery;
 	}
-	
+
 	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
-		
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
+
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id",
+				maxVotedRecoId);
 		return masterBoolQueryBuilder;
 	}
 
@@ -223,6 +231,32 @@ public class ElasticSearchQueryUtil {
 			GeoPolygonQueryBuilder setPolygon = QueryBuilders.geoPolygonQuery(geoAggregationField, geoPoints);
 			masterBoolQuery.filter(setPolygon);
 		}
+	}
+
+	protected void applyShapeFilter(MapSearchParams searchParams, BoolQueryBuilder masterBoolQuery,
+			String geoAggregationField) throws IOException {
+
+		MapBoundParams mapBoundParams = searchParams.getMapBoundParams();
+		if (mapBoundParams == null)
+			return;
+
+		List<MapGeoPoint> polygon = mapBoundParams.getPolygon();
+
+		if (polygon != null && !polygon.isEmpty()) {
+
+			CoordinatesBuilder cb = new CoordinatesBuilder();
+
+			polygon.forEach(i -> {
+				cb.coordinate(i.getLon(), i.getLat());
+			});
+			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoAggregationField,
+					new MultiPointBuilder(cb.build()));
+			
+			qb.relation(ShapeRelation.WITHIN);
+			masterBoolQuery.filter(new NestedQueryBuilder(geoAggregationField, qb, null));
+	
+		}
+
 	}
 
 	protected void applyMapBounds(MapBounds bounds, BoolQueryBuilder masterBoolQuery, String geoAggregationField) {

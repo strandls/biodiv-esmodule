@@ -590,7 +590,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			return new MapResponse(new ArrayList<>(), 0, geohashAggregation, geohashAggregation, termsAggregation);
 		}
 
-		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
+		applyShapeFilter(searchParams, masterBoolQuery, geoAggregationField);
 		MapResponse mapResponse = querySearch(index, type, masterBoolQuery, searchParams, geoAggregationField,
 				geoAggegationPrecision);
 		mapResponse.setViewFilteredGeohashAggregation(mapResponse.getGeohashAggregation());
