@@ -171,8 +171,8 @@ public interface ElasticSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapResponse search(String index, String type, MapSearchQuery query, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
-			throws IOException;
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
+			String geoFilterField, String nestedField) throws IOException;
 
 	/**
 	 * Geohash aggregation search on a geo_point field.
@@ -277,8 +277,8 @@ public interface ElasticSearchService {
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter);
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type, Integer authorId,
+			String timeFilter);
 
 	/**
 	 * @param index
@@ -302,8 +302,9 @@ public interface ElasticSearchService {
 	public FilterPanelData getListPanel(String index, String type);
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
-	
-	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
-	
+
+	public String forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds);
+
 	public String fetchIndex();
 }
