@@ -6,6 +6,8 @@ package com.strandls.esmodule;
  */
 
 public class ApiConstants {
+	
+	private ApiConstants() {}
 
 	// versioning
 
@@ -33,10 +35,10 @@ public class ApiConstants {
 	public static final String NEARBY = "/nearby";
 	public static final String AUTOSUGGEST = "/suggest";
 	public static final String MATCHPHRASE = "/exactmatch";
-	public static final String AutoComplete = "/auto-complete";
+	public static final String AUTOCOMPLETE = "/auto-complete";
 
-	public static final String GetTopUsers="/leaderboard";
-	public static final String GetUserScore="/userscore";
+	public static final String GETTOPUSERS="/leaderboard";
+	public static final String GETUSERSCORE="/userscore";
 	public static final String REINDEX = "/reindex";
 	public static final String FILTERAUTOCOMPLETE = "/filterautocomplete";
 	public static final String LIST = "/list";

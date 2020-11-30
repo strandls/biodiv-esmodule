@@ -7,6 +7,8 @@ package com.strandls.esmodule.utils;
  *
  */
 public class GeoDistance {
+	
+	private GeoDistance() {}
 
 	public static double distance(double fromLong, double fromLat, double toLong, double toLat) {
 

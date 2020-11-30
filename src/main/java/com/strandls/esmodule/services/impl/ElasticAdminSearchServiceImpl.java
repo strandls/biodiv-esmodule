@@ -117,7 +117,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 
 	@Override
-	public MapQueryResponse reIndex(String index, String mapping) throws IOException {
+	public MapQueryResponse reIndex(String index, String mapping) throws IOException, InterruptedException {
 		String filePath = "/app/configurations/scripts/";
 		String script = null;
 		Response response  = deleteIndex(index);
@@ -158,7 +158,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 	
 
-	private Integer startShellScriptProcess(String script, String filePath) {
+	private Integer startShellScriptProcess(String script, String filePath) throws InterruptedException {
 		Process process;
 		try {
 			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
@@ -168,6 +168,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 			logger.error(e.getMessage());
 		} catch (InterruptedException e) {
 			logger.error(e.getMessage());
+			Thread.currentThread().interrupt();
 		}
 		return -1;
 	}

@@ -7,6 +7,8 @@ package com.strandls.esmodule.utils;
  *
  */
 public class GeoGridService {
+	
+	private GeoGridService() {}
 
 	public static double[][][] squareGrid(double east, double west, double north, double south, double cellSide) {
 

@@ -87,7 +87,6 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 	private void downloadJson(SearchRequest searchRequest, ZipOutputStream out) throws IOException {
 
 		SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
-		System.out.println(searchResponse.toString());
 		do {
 
 			for (SearchHit hit : searchResponse.getHits().getHits())
@@ -117,7 +116,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 					headerSet = hit.getSourceAsMap().keySet();
 
 				if (first)
-					out.write(Utils.getCsvBytes(new ArrayList<Object>(headerSet)));
+					out.write(Utils.getCsvBytes(new ArrayList<>(headerSet)));
 
 				values = new ArrayList<>();
 				for (String key : headerSet) {
@@ -152,7 +151,6 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 		
 		searchRequest.source(sourceBuilder);
 		searchRequest.scroll(new TimeValue(60000));
-		System.out.println(searchRequest);
 		return searchRequest;
 	}
 }

@@ -1,8 +1,8 @@
 package com.strandls.esmodule.utils;
 
 public enum IndexMappingsConstants {		
-			mappingOnFieldNameAndCommonName(
-					//"{\"settings\":{\"analysis\":{\"filter\":{\"ngram_filter\":{\"type\":\"nGram\",\"min_gram\":3,\"max_gram\":10,\"token_chars\":[\"letter\",\"digit\",\"symbol\",\"punctuation\"]}},\"analyzer\":{\"nGram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"whitespace\",\"filter\":[\"lowercase\",\"asciifolding\",\"ngram_filter\"]},\"whitespace_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"whitespace\",\"filter\":[\"lowercase\",\"asciifolding\"]}},\"normalizer\":{\"case_insensitive_normalizer\":{\"type\":\"custom\",\"filter\":[\"asciifolding\",\"lowercase\"]}}}},\"mappings\":{\"extended_records\":{\"properties\":{\"name\":{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\",\"search_analyzer\":\"whitespace_analyzer\",\"fields\":{\"raw\":{\"type\":\"keyword\",\"normalizer\":\"case_insensitive_normalizer\"}}},\"common_names\":{\"properties\":{\"name\":{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\",\"search_analyzer\":\"whitespace_analyzer\",\"fields\":{\"raw\":{\"type\":\"keyword\",\"normalizer\":\"case_insensitive_normalizer\"}}}}}}}}}"
+			MAPPING_FIELDNAME_COMMONNAME(
+					//"{\"settings\":{\"analysis\":{\"filter\":{\"ngram_filter\":{\"type\":\"nGram\",\"min_gram\":3,\"max_gram\":10,\"token_chars\":[\"letter\",\"digit\",\"symbol\",\"punctuation\"]}},\"analyzer\":{\"nGram_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"whitespace\",\"filter\":[\"lowercase\",\"asciifolding\",\"ngram_filter\"]},\"whitespace_analyzer\":{\"type\":\"custom\",\"tokenizer\":\"whitespace\",\"filter\":[\"lowercase\",\"asciifolding\"]}},\"normalizer\":{\"case_insensitive_normalizer\":{\"type\":\"custom\",\"filter\":[\"asciifolding\",\"lowercase\"]}}}},\"mappings\":{\"_doc\":{\"properties\":{\"name\":{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\",\"search_analyzer\":\"whitespace_analyzer\",\"fields\":{\"raw\":{\"type\":\"keyword\",\"normalizer\":\"case_insensitive_normalizer\"}}},\"common_names\":{\"properties\":{\"name\":{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\",\"search_analyzer\":\"whitespace_analyzer\",\"fields\":{\"raw\":{\"type\":\"keyword\",\"normalizer\":\"case_insensitive_normalizer\"}}}}}}}}}"
 					"{\"settings\":{\"analysis\":{\"filter\":"
 					+ "{\"ngram_filter\":{\"type\":\"nGram\",\"min_gram\":1,\"max_gram\":30,"
 					+ "\"token_chars\":[\"letter\",\"digit\",\"symbol\",\"punctuation\"]}},"
@@ -12,7 +12,7 @@ public enum IndexMappingsConstants {
 					+ "\"filter\":[\"lowercase\",\"asciifolding\"]}},"
 					+ "\"normalizer\""
 					+ ":{\"case_insensitive_normalizer\":{\"type\":\"custom\",\"filter\""
-					+ ":[\"lowercase\"]}}}},\"mappings\":{\"extended_records\":{\"properties\""
+					+ ":[\"lowercase\"]}}}},\"mappings\":{\"_doc\":{\"properties\""
 					+ ":{\"name\":{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\","
 					+ "\"search_analyzer\":\"whitespace_analyzer\","
 					+ "\"fields\":{\"raw\":{\"type\":\"keyword\","
@@ -21,7 +21,7 @@ public enum IndexMappingsConstants {
 					+ "\"analyzer\":\"nGram_analyzer\",\"search_analyzer\":\"whitespace_analyzer\","
 					+ "\"fields\":{\"raw\":{\"type\":\"keyword\",\"normalizer\":\"case_insensitive_normalizer\"}}}}}}}}}"
 					),
-			mappingOfObservationIndex("{\"settings\":{\"index.mapping.total_fields.limit\":2000,"
+			MAPPING_OBSERVATION_INDEX("{\"settings\":{\"index.mapping.total_fields.limit\":2000,"
 					+ "\"analysis\":{\"filter\":{\"ngram_filter\":{\"type\":\"nGram\","
 					+ "\"min_gram\":1,\"max_gram\":30,"
 					+ "\"token_chars\":[\"letter\",\"digit\","
@@ -35,7 +35,7 @@ public enum IndexMappingsConstants {
 					+ "\"filter\":[\"lowercase\",\"asciifolding\"]}},"
 					+ "\"normalizer\":{\"case_insensitive_normalizer\":{\"type\":\"custom\","
 					+ "\"filter\":[\"lowercase\"]}}}},"
-					+ "\"mappings\":{\"extended_records\":"
+					+ "\"mappings\":{\"_doc\":"
 					+ "{\"properties\":{\"all_reco_vote.scientific_name.name\":"
 					+ "{\"type\":\"text\",\"analyzer\":\"nGram_analyzer\","
 					+ "\"search_analyzer\":\"whitespace_analyzer\"},"

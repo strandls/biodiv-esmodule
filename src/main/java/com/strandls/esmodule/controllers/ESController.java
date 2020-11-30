@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.esmodule.ApiConstants;
+import com.strandls.esmodule.ErrorConstants;
 import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.indexes.pojo.UserScore;
@@ -105,14 +106,12 @@ public class ESController {
 		try {
 			new ObjectMapper().readValue(docString, Map.class);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build());
 		}
 
 		try {
 			return elasticSearchService.create(index, type, documentId, docString);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -131,7 +130,6 @@ public class ESController {
 		try {
 			return elasticSearchService.fetch(index, type, documentId);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -151,7 +149,6 @@ public class ESController {
 		try {
 			return elasticSearchService.update(index, type, documentId, document);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -170,7 +167,6 @@ public class ESController {
 		try {
 			return elasticSearchService.delete(index, type, documentId);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -190,7 +186,6 @@ public class ESController {
 		try {
 			return elasticSearchService.bulkUpload(index, type, jsonArray);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -221,7 +216,6 @@ public class ESController {
 		try {
 			return elasticSearchService.bulkUpdate(index, type, updateDocs);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -249,7 +243,6 @@ public class ESController {
 			return elasticSearchService.termSearch(index, type, key, value, searchParams, geoAggregationField,
 					geoAggegationPrecision);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -274,7 +267,6 @@ public class ESController {
 			return elasticSearchService.boolSearch(index, type, query, searchParams, geoAggregationField,
 					geoAggegationPrecision);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -299,7 +291,6 @@ public class ESController {
 			return elasticSearchService.rangeSearch(index, type, query, searchParams, geoAggregationField,
 					geoAggegationPrecision);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -325,7 +316,6 @@ public class ESController {
 		try {
 			return elasticSearchService.geohashAggregation(index, type, field, precision);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -362,7 +352,6 @@ public class ESController {
 		try {
 			return elasticSearchService.termsAggregation(index, type, field, subField, size, locationField, query);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -389,13 +378,12 @@ public class ESController {
 
 		if (bounds != null && geoAggregationField == null)
 			throw new WebApplicationException(
-					Response.status(Status.BAD_REQUEST).entity("Location field not specified for bounds").build());
+					Response.status(Status.BAD_REQUEST).entity(ErrorConstants.LOCATION_FIELD_NOT_SPECIFIED).build());
 
 		try {
 			return elasticSearchService.aggregation(index, type, query, geoAggregationField, filter);
 
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -468,13 +456,12 @@ public class ESController {
 
 		if (bounds != null && geoAggregationField == null)
 			throw new WebApplicationException(
-					Response.status(Status.BAD_REQUEST).entity("Location field not specified for bounds").build());
+					Response.status(Status.BAD_REQUEST).entity(ErrorConstants.LOCATION_FIELD_NOT_SPECIFIED).build());
 
 		try {
 			return elasticSearchService.getNewGeoAggregation(index, type, query, geoAggregationField,
 					geoAggegationPrecision);
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -509,13 +496,12 @@ public class ESController {
 
 		if (bounds != null && geoAggregationField == null)
 			throw new WebApplicationException(
-					Response.status(Status.BAD_REQUEST).entity("Location field not specified for bounds").build());
+					Response.status(Status.BAD_REQUEST).entity(ErrorConstants.LOCATION_FIELD_NOT_SPECIFIED).build());
 
 		try {
 			return elasticSearchService.search(index, type, query, geoAggregationField, geoAggegationPrecision,
 					onlyFilteredAggregation, termsAggregationField);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -535,7 +521,6 @@ public class ESController {
 		try {
 			return elasticSearchDownloadService.downloadSearch(index, type, query, geoField, filePath, fileType);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -555,7 +540,6 @@ public class ESController {
 		try {
 			return elasticAdminSearchService.getMapping(index);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -570,16 +554,14 @@ public class ESController {
 
 	public Response reIndex(@QueryParam("index") String index) {
 		List<String> indexDetails = utilityMethods.getEsindexWithMapping(index);
-		if(indexDetails.size() != 2)
-			return Response.status(Status.INTERNAL_SERVER_ERROR).build(); 
-		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, 
-				indexDetails.get(0), indexDetails.get(1), logger);
+		if (indexDetails.size() != 2)
+			return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+		ReIndexingThread reIndexingThread = new ReIndexingThread(elasticAdminSearchService, indexDetails.get(0),
+				indexDetails.get(1), logger);
 		Thread thread = new Thread(reIndexingThread);
 		thread.start();
 		return Response.status(Status.OK).build();
 	}
-	
-	
 
 	@POST
 	@Path(ApiConstants.MAPPING + "/{index}")
@@ -597,7 +579,6 @@ public class ESController {
 		try {
 			return elasticAdminSearchService.postMapping(index, docString);
 		} catch (IOException e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -616,7 +597,6 @@ public class ESController {
 		try {
 			return elasticAdminSearchService.createIndex(index, type);
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -632,12 +612,10 @@ public class ESController {
 
 	public Response esPostMapping(@PathParam("index") String index) {
 		try {
-			MapQueryResponse response = null;
 			List<String> indexNameAndMapping = utilityMethods.getEsindexWithMapping(index);
-			response = elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
+			elasticAdminSearchService.esPostMapping(indexNameAndMapping.get(0), indexNameAndMapping.get(1));
 			return Response.status(Status.OK).build();
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -646,7 +624,7 @@ public class ESController {
 
 	@SuppressWarnings("unchecked")
 	@GET
-	@Path(ApiConstants.AutoComplete + "/{index}/{type}")
+	@Path(ApiConstants.AUTOCOMPLETE + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -673,12 +651,11 @@ public class ESController {
 					records = utilityMethods.rankDocument((List<ExtendedTaxonDefinition>) records, field, fieldText);
 				} else if (field.equals("common_name")) {
 					records = utilityMethods.rankDocumentBasedOnCommonName((List<ExtendedTaxonDefinition>) records,
-							filterField, fieldText);
+							fieldText);
 				}
 			}
 			return Response.status(Status.OK).entity(records).build();
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
 		}
 
@@ -701,52 +678,47 @@ public class ESController {
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		Boolean checkOnAllParam = false;
-		if(!scientificText.isEmpty() || scientificText != null) {
+		if (scientificText != null && !scientificText.isEmpty()) {
 			checkOnAllParam = true;
 		}
 
 		try {
 			List<ExtendedTaxonDefinition> records = elasticSearchService.matchPhrase(index, type, scientificField,
-					scientificText, canonicalField, canonicalText,checkOnAllParam);
-			if (records != null && records.size() > 1) {
+					scientificText, canonicalField, canonicalText, checkOnAllParam);
+			if (records.size() > 1) {
 				records = utilityMethods.rankDocument(records, canonicalField, scientificText);
 				return Response.status(Status.OK).entity(records.get(0)).build();
 			}
 			return Response.status(Status.OK).entity(records.get(0)).build();
 		} catch (Exception e) {
-			logger.error(e.getMessage());
 			throw new WebApplicationException(Response.status(Status.NO_CONTENT).entity(e.getMessage()).build());
 		}
 	}
 
 	@GET
-	@Path(ApiConstants.GetTopUsers + "/{index}/{type}")
+	@Path(ApiConstants.GETTOPUSERS + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", 
-	response = LinkedHashMap.class, responseContainer = "List")
+	@ApiOperation(value = "Getting top users based on score", notes = "Returns Success Failure", response = LinkedHashMap.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
-			@DefaultValue("")@QueryParam("value") String sortingValue,
+			@DefaultValue("") @QueryParam("value") String sortingValue,
 			@DefaultValue("20") @QueryParam("how_many") String topUser,
-			@DefaultValue("")@QueryParam("time") String timePeriod) {
-		
+			@QueryParam("time") String timePeriod) {
+
 		String timeFilter = null;
 		if (sortingValue.isEmpty())
 			sortingValue = null;
-		if(timePeriod.isEmpty())
-			timePeriod = null;
-		else 
+		else
 			timeFilter = utilityMethods.getTimeWindow(timePeriod);
-		
+
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getTopUsers(index,type, sortingValue, 
-						Integer.parseInt(topUser),timeFilter);
+
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getTopUsers(index,
+				type, sortingValue, Integer.parseInt(topUser), timeFilter);
 		return Response.status(Status.OK).entity(records).build();
 	}
 
@@ -765,26 +737,24 @@ public class ESController {
 	}
 
 	@GET
-	@Path(ApiConstants.GetUserScore)
+	@Path(ApiConstants.GETUSERSCORE)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Getting User Activity Score", notes = "Returns Success Failure", response = UserScore.class)
 	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getUserScore(@DefaultValue("eaf") @QueryParam("index") String index,
 			@DefaultValue("er") @QueryParam("type") String type, @QueryParam("authorId") String authorId,
-			@DefaultValue("")@QueryParam("time") String timePeriod) {
+			@DefaultValue("") @QueryParam("time") String timePeriod) {
 
 		String timeFilter = null;
-		if(timePeriod.isEmpty())
-			timePeriod = null;
-		else 
+		if (!timePeriod.isEmpty()) {
 			timeFilter = utilityMethods.getTimeWindow(timePeriod);
-		
+		}
+
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
-		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = 
-				elasticSearchService.getUserScore(index,
-				type, Integer.parseInt(authorId),timeFilter);
+		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
+				type, Integer.parseInt(authorId), timeFilter);
 		UserScore record = new UserScore();
 		record.setRecord(records);
 		return Response.status(Status.OK).entity(record).build();
@@ -827,36 +797,36 @@ public class ESController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@GET
 	@Path(ApiConstants.FORCEUPDATE)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.TEXT_PLAIN)
-	@ApiOperation(value = "force update of field in elastic index",notes = "return succesful response",response = String.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to make update",response = String.class)})
-	public Response forceUpdateIndexField(@QueryParam("index")String index, @QueryParam("type")String type,
-			@QueryParam("field")String field, @QueryParam("value")String value, 
-			@QueryParam("ids")String ids) {
-		List<String>documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
+	@ApiOperation(value = "force update of field in elastic index", notes = "return succesful response", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to make update", response = String.class) })
+	public Response forceUpdateIndexField(@QueryParam("index") String index, @QueryParam("type") String type,
+			@QueryParam("field") String field, @QueryParam("value") String value, @QueryParam("ids") String ids) {
+		List<String> documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
 		index = utilityMethods.getEsIndexConstants(index);
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		String response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
-		if(response.contains("fail"))
-				return Response.status(Status.BAD_REQUEST).entity(response).build();
+		if (response.contains("fail"))
+			return Response.status(Status.BAD_REQUEST).entity(response).build();
 		else
 			return Response.status(Status.OK).entity(response).build();
 	}
-	
+
 	@GET
 	@Path(ApiConstants.FETCHINDEX)
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "fetch index information from elastic",notes = "return succesful response",response = String.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message ="Unable to fetch index information",response = String.class)})
+	@ApiOperation(value = "fetch index information from elastic", notes = "return succesful response", response = String.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "Unable to fetch index information", response = String.class) })
 	public Response fetchIndex() {
 		String response = elasticSearchService.fetchIndex();
-		if(response != null)
+		if (response != null)
 			return Response.status(Status.OK).entity(response).build();
-		else 
+		else
 			return Response.status(Status.BAD_REQUEST).build();
 	}
 	
