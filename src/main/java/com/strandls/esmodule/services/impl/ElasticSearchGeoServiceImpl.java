@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.es.ElasticSearchClient;
+import com.strandls.esmodule.ErrorConstants;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.services.ElasticSearchGeoService;
@@ -83,7 +84,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	public MapResponse getGeoWithinDocuments(String index, String type, String geoField, double top, double left,
 			double bottom, double right) throws IOException {
 
-		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
+		logger.info(ErrorConstants.GEO_WITH_SEARCH, top, left, bottom, right);
 		GeoBoundingBoxQueryBuilder query = QueryBuilders.geoBoundingBoxQuery(geoField).setCorners(top, left, bottom,
 				right);
 
@@ -95,7 +96,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 	public Map<String, Long> getGeoAggregation(String index, String type, String geoField, Integer precision,
 			Double top, Double left, Double bottom, Double right, Long speciesId) throws IOException {
 
-		logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
+		logger.info(ErrorConstants.GEO_WITH_SEARCH, top, left, bottom, right);
 
 		AggregationBuilder aggregationBuilder = AggregationBuilders.geohashGrid("agg").field(geoField)
 				.precision(precision);
@@ -223,7 +224,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			Double bottom = jsonObject.getDouble("bottom");
 			Double right = jsonObject.getDouble("right");
 
-			logger.info("Geo with search, top: {}, left: {}, bottom: {}, right: {}", top, left, bottom, right);
+			logger.info(ErrorConstants.GEO_WITH_SEARCH, top, left, bottom, right);
 			top = top < LAT_MIN || top > LAT_MAX ? Math.copySign(LAT_MAX, top) : top;
 			bottom = bottom < LAT_MIN || bottom > LAT_MAX ? Math.copySign(LAT_MAX, bottom) : bottom;
 
@@ -245,6 +246,11 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 		if (jsonObject.has("userGroupId")) {
 			Long userGroupId = jsonObject.getLong("userGroupId");
 			TermQueryBuilder termQuery = QueryBuilders.termQuery("user_group_observations.id", userGroupId);
+			boolqueryBuilder.must(termQuery);
+		}
+		if (jsonObject.has("authorId")) {
+			Long userGroupId = jsonObject.getLong("authorId");
+			TermQueryBuilder termQuery = QueryBuilders.termQuery("author_id", userGroupId);
 			boolqueryBuilder.must(termQuery);
 		}
 

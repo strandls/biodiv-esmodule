@@ -1,7 +1,10 @@
 package com.strandls.esmodule.services.impl;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.inject.Inject;
@@ -112,7 +115,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 
 	@Override
-	public MapQueryResponse reIndex(String index, String mapping) throws IOException {
+	public MapQueryResponse reIndex(String index, String mapping) throws IOException, InterruptedException {
 		String filePath = "/app/configurations/scripts/";
 		String script = null;
 		Response response  = deleteIndex(index);
@@ -135,6 +138,18 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 					}
 				}
 			}
+			else if(index.equalsIgnoreCase("extended_observation_test")){
+				 script = "refreshObservationMVTest.sh";
+				 System.out.println("\n\nrefreshObservationMVTest.sh\n\n");
+				 if(startShellScriptProcess(script, filePath)==0) {
+					script = "runObservationElasticMigrationTest.sh";
+					System.out.println("\n\runObservationElasticMigrationTest.sh\n\n");
+					if( status.equalsIgnoreCase("ok") && startShellScriptProcessPB(script, filePath)==0) {
+						System.out.println("\n\nInside\n\n");
+						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
+					}
+				}
+			}
 		}
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN,"re-indexing failure"); 
 	}
@@ -153,7 +168,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 	
 
-	private Integer startShellScriptProcess(String script, String filePath) {
+	private Integer startShellScriptProcess(String script, String filePath) throws InterruptedException {
 		Process process;
 		try {
 			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
@@ -162,6 +177,30 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+			Thread.currentThread().interrupt();
+		}
+		return -1;
+	}
+	
+
+	private Integer startShellScriptProcessPB(String script, String filePath) {
+		Process process;
+		try {
+			
+			ProcessBuilder pb = new ProcessBuilder(Arrays.asList("nohup", "sh", script));
+			pb.directory(new File(filePath));
+			pb.redirectErrorStream(false);
+			process = pb.start();
+
+//			int processStatus = process.waitFor();
+			String line = null;
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			while ((line = reader.readLine()) != null) {
+				System.out.println(line);// Ignore line, or do something with it
+			}
+			return 0;
+		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
 		return -1;
