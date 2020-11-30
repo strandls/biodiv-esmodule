@@ -33,6 +33,7 @@ import com.strandls.esmodule.indexes.pojo.ElasticIndexes;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.indexes.pojo.UserScore;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapBoundParams;
@@ -827,5 +828,30 @@ public class ESController {
 			return Response.status(Status.OK).entity(response).build();
 		else
 			return Response.status(Status.BAD_REQUEST).build();
+	}
+	
+	@GET
+	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "fetch the observation uploaded freq by user", notes = "Returns the maxvotedId freq", response = AuthorUploadedObservationInfo.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the result", response = String.class) })
+
+	public Response getUploadUserInfo(@PathParam("index") String index, @PathParam("type") String type,
+			@PathParam("authorId") String authorId, @QueryParam("size") String size,
+			@QueryParam("sGroup") String sGroup, @QueryParam("hasMedia") Boolean hasMedia) {
+		try {
+			Long aId = Long.parseLong(authorId);
+			Integer Size = Integer.parseInt(size);
+			Long speciesGroup = null;
+			if (sGroup != null)
+				speciesGroup = Long.parseLong(sGroup);
+			AuthorUploadedObservationInfo result = elasticSearchService.getUserData(index, type, aId, Size,
+					speciesGroup, hasMedia);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
 	}
 }

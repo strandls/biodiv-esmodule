@@ -34,7 +34,7 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.geo.GeoDistance;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -60,16 +60,17 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGrid;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.geogrid.ParsedGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.missing.Missing;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
+import org.elasticsearch.search.aggregations.pipeline.BucketScriptPipelineAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
-import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
-import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
-import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.GeoDistanceSortBuilder;
@@ -93,6 +94,7 @@ import com.strandls.es.ElasticSearchClient;
 import com.strandls.esmodule.Constants;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
+import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
@@ -105,6 +107,7 @@ import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.MaxVotedReco;
+import com.strandls.esmodule.models.MaxVotedRecoFreq;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationMapInfo;
@@ -149,7 +152,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to create index: {}, type: {} & id: {}", index, type, documentId);
 
-		IndexRequest request = new IndexRequest(index, type, documentId);
+		IndexRequest request = new IndexRequest(index);
+		request.id(documentId);
 		request.source(document, XContentType.JSON);
 		// IndexResponse indexResponse = client.index(request); DEPRECATED
 		IndexResponse indexResponse = client.index(request, RequestOptions.DEFAULT);
@@ -185,7 +189,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to fetch index: {}, type: {} & id: {}", index, type, documentId);
 
-		GetRequest request = new GetRequest(index, type, documentId);
+		GetRequest request = new GetRequest(index, documentId);
 		GetResponse response = client.get(request, RequestOptions.DEFAULT);
 
 		logger.info("Fetched index: {}, type: {} & id: {} with status {}", index, type, documentId,
@@ -207,7 +211,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to update index: {}, type: {} & id: {}", index, type, documentId);
 
-		UpdateRequest request = new UpdateRequest(index, type, documentId);
+		UpdateRequest request = new UpdateRequest(index, documentId);
 		request.doc(document);
 		UpdateResponse updateResponse = client.update(request, RequestOptions.DEFAULT);
 		ShardInfo shardInfo = updateResponse.getShardInfo();
@@ -239,7 +243,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		logger.info("Trying to delete index: {}, type: {} & id: {}", index, type, documentId);
 
-		DeleteRequest request = new DeleteRequest(index, type, documentId);
+		DeleteRequest request = new DeleteRequest(index, documentId);
 		DeleteResponse deleteResponse = client.delete(request, RequestOptions.DEFAULT);
 		ReplicationResponse.ShardInfo shardInfo = deleteResponse.getShardInfo();
 
@@ -300,10 +304,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		BulkRequest request = new BulkRequest();
 
-		for (JsonNode json : jsons)
-			request.add(
-					new IndexRequest(index, type, json.get("id").asText()).source(json.toString(), XContentType.JSON));
+		for (JsonNode json : jsons) {
+			IndexRequest ir = new IndexRequest(index);
+			ir.id(json.get("id").asText());
+			ir.source(json.toString(), XContentType.JSON);
+			request.add(ir);
 
+		}
+		// BulkResponse bulkResponse = client.bulk(request);
 		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 		for (BulkItemResponse bulkItemResponse : bulkResponse) {
 
@@ -346,7 +354,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		BulkRequest request = new BulkRequest();
 
 		for (Map<String, Object> doc : updateDocs)
-			request.add(new UpdateRequest(index, type, doc.get("id").toString()).doc(doc));
+			request.add(new UpdateRequest(index, doc.get("id").toString()).doc(doc));
 
 		BulkResponse bulkResponse = client.bulk(request, RequestOptions.DEFAULT);
 
@@ -408,15 +416,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(getGeoGridAggregationBuilder(geoAggregationField, geoAggegationPrecision));
 		}
 
+		sourceBuilder.trackTotalHits(true);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
 		List<MapDocument> result = new ArrayList<>();
 
-		long totalHits = searchResponse.getHits().getTotalHits();
+		long totalHits = searchResponse.getHits().getTotalHits().value;
 
 		for (SearchHit hit : searchResponse.getHits().getHits())
 			result.add(new MapDocument(hit.getSourceAsString()));
@@ -660,7 +668,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.aggregation(aggQuery);
 
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(sourceBuilder);
 
 		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
@@ -689,7 +696,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.aggregation(aggQuery);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
@@ -732,7 +738,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -788,7 +793,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		sourceBuilder.fetchSource(includes, null);
 
 		SearchRequest request = new SearchRequest(index);
-		request.types(type);
 		request.source(sourceBuilder);
 
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -862,7 +866,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchResponse searchResponse = null;
 		try {
 			searchSourceBuilder.query(query);
-			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
@@ -898,7 +901,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchResponse searchResponse = null;
 		try {
 			searchSourceBuilder.query(query);
-			searchRequest.types(type);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 			
@@ -934,7 +936,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		SearchResponse searchResponse = null;
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		try {
 			searchSourceBuilder.query(boolQueryBuilder);
 			searchRequest.source(searchSourceBuilder);
@@ -944,7 +945,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			logger.error(e.getMessage());
 		}
 
-		if (searchResponse != null && searchResponse.getHits().getTotalHits() == 0) {
+		if (searchResponse != null && searchResponse.getHits().getTotalHits().value == 0) {
 			MatchPhraseQueryBuilder matchPhraseQueryBuilder = QueryBuilders.matchPhraseQuery(canonicalFieldName,
 					canonicalText);
 			try {
@@ -956,7 +957,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 		}
 
-		if (searchResponse != null && searchResponse.getHits().getTotalHits() == 0)
+		if (searchResponse != null && searchResponse.getHits().getTotalHits().value == 0)
 			return new ArrayList<>();
 
 		return processElasticResponse(searchResponse);
@@ -971,7 +972,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 		SearchResponse searchResponse = null;
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 
 		if (filterOn.equalsIgnoreCase("district") || filterOn.equalsIgnoreCase("tahsil")
 				|| filterOn.equalsIgnoreCase("tags")) {
@@ -1043,7 +1043,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		searchSourceBuilder.query(queryBuilder);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		SearchResponse searchResponse = null;
 		searchRequest.source(searchSourceBuilder);
 		try {
@@ -1068,7 +1067,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(filterByDate);
 		searchSourceBuilder.size(0);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		searchRequest.source(searchSourceBuilder);
 
 		SearchResponse searchResponse = null;
@@ -1275,16 +1273,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(geoGridAggregationBuilder);
 
 			SearchRequest searchRequest = new SearchRequest(index);
-			searchRequest.types(type);
 			searchRequest.source(sourceBuilder);
 			SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-			Long totalCount = searchResponse.getHits().getTotalHits();
+			Long totalCount = searchResponse.getHits().getTotalHits().value;
 			Map<String, Long> geoHashData = new HashMap<String, Long>();
 
 			Aggregations aggregations = searchResponse.getAggregations();
 			ParsedGeoHashGrid geoHashGrid = aggregations.get(geoAggregationField + "-" + geoAggegationPrecision);
 
-			for (org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid.Bucket b : geoHashGrid.getBuckets()) {
+			for (GeoGrid.Bucket b : geoHashGrid.getBuckets()) {
 				geoHashData.put(b.getKeyAsString(), b.getDocCount());
 			}
 
@@ -1321,7 +1318,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			sourceBuilder.aggregation(cfAggregation);
 
 			SearchRequest request = new SearchRequest(index);
-			request.types(type);
 			request.source(sourceBuilder);
 
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -1472,7 +1468,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			String[] includes = { Constants.OBSERVATION_ID, Constants.LOCATION };
 			sourceBuilder.fetchSource(includes, null);
 			SearchRequest request = new SearchRequest(index);
-			request.types(type);
 			request.source(sourceBuilder);
 			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 			List<ObservationLatLon> obvList = new ArrayList<ObservationLatLon>();
@@ -1527,11 +1522,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			mappingsRequest.indicesOptions(IndicesOptions.lenientExpandOpen());
 			GetMappingsResponse getMappingResponse = client.indices().getMapping(mappingsRequest,
 					RequestOptions.DEFAULT);
-			Map<String, MappingMetaData> allMappings = getMappingResponse.mappings();
+			Map<String, MappingMetadata> allMappings = getMappingResponse.mappings();
 
-			for (Map.Entry<String, MappingMetaData> index : allMappings.entrySet()) {
+			for (Map.Entry<String, MappingMetadata> index : allMappings.entrySet()) {
 				if (!(index.getKey().startsWith("."))) {
-					MappingMetaData indexMapping = index.getValue();
+					MappingMetadata indexMapping = index.getValue();
 					Map<String, Object> mapping = indexMapping.sourceAsMap();
 					LinkedHashMap<String, Object> properties = (LinkedHashMap<String, Object>) mapping
 							.get("properties");
@@ -1545,5 +1540,60 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			logger.error(e.getMessage());
 		}
 		return null;
+	}
+
+	@Override
+	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
+			Boolean hasMedia) {
+
+		try {
+
+			List<MaxVotedRecoFreq> maxVotedRecoFreqs = new ArrayList<MaxVotedRecoFreq>();
+
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", userId));
+
+			if (sGroup != null) {
+				boolQueryBuilder.must(QueryBuilders.termQuery("group_id", sGroup));
+			}
+
+			if (hasMedia) {
+				boolQueryBuilder.must(QueryBuilders.termQuery("no_media", 0));
+			}
+
+			AggregationBuilder uploadUniqueSpecies = AggregationBuilders.terms("uploadUniqueSpecies")
+					.field("max_voted_reco.id").size(50000).order(BucketOrder.count(false));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.aggregation(uploadUniqueSpecies);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+
+			SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+			Terms terms = response.getAggregations().get("uploadUniqueSpecies");
+			int count = 1;
+			for (Terms.Bucket b : terms.getBuckets()) {
+				if (count <= (size - 10))
+					count++;
+				else {
+					if (count > size)
+						break;
+					System.out.println(count);
+					maxVotedRecoFreqs.add(new MaxVotedRecoFreq(Long.parseLong(b.getKeyAsString()), b.getDocCount()));
+					count++;
+				}
+
+			}
+			Long total = Long.parseLong(String.valueOf(terms.getBuckets().size()));
+			AuthorUploadedObservationInfo result = new AuthorUploadedObservationInfo(total, maxVotedRecoFreqs);
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+
 	}
 }

@@ -95,7 +95,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.searchScroll(request,RequestOptions.DEFAULT);
+			searchResponse = client.scroll(request,RequestOptions.DEFAULT);
 
 		} while (searchResponse.getHits().getHits().length != 0);
 
@@ -130,7 +130,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.searchScroll(request,RequestOptions.DEFAULT);
+			searchResponse = client.scroll(request,RequestOptions.DEFAULT);
 		} while (searchResponse.getHits().getHits().length != 0);
 
 	}
@@ -147,7 +147,6 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 		sourceBuilder.query(boolQueryBuilder);
 		sourceBuilder.size(5000);
 		SearchRequest searchRequest = new SearchRequest(index);
-		searchRequest.types(type);
 		
 		
 		searchRequest.source(sourceBuilder);
