@@ -307,7 +307,11 @@ public interface ElasticSearchService {
 			List<String> documentIds);
 
 	public String fetchIndex();
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> master
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
 			Boolean hasMedia);
 }

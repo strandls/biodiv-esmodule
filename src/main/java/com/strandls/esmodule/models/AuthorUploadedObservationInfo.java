@@ -41,4 +41,8 @@ public class AuthorUploadedObservationInfo {
 		this.maxVotedRecoFreqs = maxVotedRecoFreqs;
 	}
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master

@@ -24,7 +24,7 @@ public class UtilityMethods {
 		esIndexConstants.put("eo","extended_observation");
 		esIndexConstants.put("eaf","extended_activity_feed");
 		
-		esIndexTypeConstant.put("er","extended_records");
+		esIndexTypeConstant.put("er","_doc");
 	}
 	
 	public String getEsIndexConstants(String index) {

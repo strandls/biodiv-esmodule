@@ -40,4 +40,8 @@ public class MaxVotedRecoFreq {
 		this.freq = freq;
 	}
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master
