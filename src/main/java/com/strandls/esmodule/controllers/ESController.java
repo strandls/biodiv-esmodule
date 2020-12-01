@@ -832,10 +832,7 @@ public class ESController {
 		else
 			return Response.status(Status.BAD_REQUEST).build();
 	}
-<<<<<<< HEAD
-=======
 	
->>>>>>> master
 	@GET
 	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
 	@Consumes(MediaType.TEXT_PLAIN)
@@ -846,11 +843,7 @@ public class ESController {
 
 	public Response getUploadUserInfo(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("authorId") String authorId, @QueryParam("size") String size,
-<<<<<<< HEAD
-			@QueryParam("sGroup") String sGroup, @QueryParam("hadMedia") Boolean hasMedia) {
-=======
 			@QueryParam("sGroup") String sGroup, @QueryParam("hasMedia") Boolean hasMedia) {
->>>>>>> master
 		try {
 			Long aId = Long.parseLong(authorId);
 			Integer Size = Integer.parseInt(size);

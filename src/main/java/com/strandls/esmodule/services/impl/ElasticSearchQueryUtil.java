@@ -253,7 +253,8 @@ public class ElasticSearchQueryUtil {
 			});
 
 			PolygonBuilder polygonSet = new PolygonBuilder(cb);
-			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery("documentCoverages.topology", polygonSet);
+			@SuppressWarnings("deprecation")
+			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
 
 			qb.relation(ShapeRelation.INTERSECTS);
 			if (nestedField != null) {
