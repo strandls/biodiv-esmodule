@@ -1,23 +1,15 @@
 package com.strandls.esmodule.services.impl;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
-import org.elasticsearch.common.geo.ShapeRelation;
-import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
-import org.elasticsearch.common.geo.builders.MultiPointBuilder;
-import org.elasticsearch.common.geo.builders.PolygonBuilder;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
-import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -29,7 +21,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapGeoPoint;
-import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.query.MapAndBoolQuery;
 import com.strandls.esmodule.models.query.MapAndMatchPhraseQuery;
@@ -181,11 +172,10 @@ public class ElasticSearchQueryUtil {
 				masterBoolQuery);
 		return masterBoolQuery;
 	}
-
+	
 	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
-
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id",
-				maxVotedRecoId);
+		
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
 		return masterBoolQueryBuilder;
 	}
 
@@ -235,37 +225,6 @@ public class ElasticSearchQueryUtil {
 		}
 	}
 
-	protected void applyShapeFilter(MapSearchParams searchParams, BoolQueryBuilder masterBoolQuery,
-			String geoShapeFilterField, String nestedField) throws IOException {
-
-		MapBoundParams mapBoundParams = searchParams.getMapBoundParams();
-		if (mapBoundParams == null)
-			return;
-
-		List<MapGeoPoint> polygon = mapBoundParams.getPolygon();
-
-		if (polygon != null && !polygon.isEmpty()) {
-
-			CoordinatesBuilder cb = new CoordinatesBuilder();
-
-			polygon.forEach(i -> {
-				cb.coordinate(i.getLon(), i.getLat());
-			});
-
-			PolygonBuilder polygonSet = new PolygonBuilder(cb);
-			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery("documentCoverages.topology", polygonSet);
-
-			qb.relation(ShapeRelation.INTERSECTS);
-			if (nestedField != null) {
-				NestedQueryBuilder nb = new NestedQueryBuilder("documentCoverages", qb, ScoreMode.Avg);
-				masterBoolQuery.filter(nb);
-			} else {
-				masterBoolQuery.filter(qb);
-			}
-		}
-
-	}
-
 	protected void applyMapBounds(MapBounds bounds, BoolQueryBuilder masterBoolQuery, String geoAggregationField) {
 
 		if (bounds != null) {
@@ -273,12 +232,5 @@ public class ElasticSearchQueryUtil {
 					.setCorners(bounds.getTop(), bounds.getLeft(), bounds.getBottom(), bounds.getRight());
 			masterBoolQuery.filter(setCorners);
 		}
-	}
-
-	public MapResponse search(String index, String type, MapSearchQuery searchQuery, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
-			String geoShapeFilterField) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 }

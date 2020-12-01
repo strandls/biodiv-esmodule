@@ -567,8 +567,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	 */
 	@Override
 	public MapResponse search(String index, String type, MapSearchQuery searchQuery, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
-			String geoShapeFilterField,String nestedField) throws IOException {
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
+			throws IOException {
 
 		logger.info("SEARCH for index: {}, type: {}", index, type);
 
@@ -596,9 +596,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			return new MapResponse(new ArrayList<>(), 0, geohashAggregation, geohashAggregation, termsAggregation);
 		}
 
-		if (geoShapeFilterField != null) {
-			applyShapeFilter(searchParams, masterBoolQuery, geoShapeFilterField,nestedField);
-		}
+		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
 		MapResponse mapResponse = querySearch(index, type, masterBoolQuery, searchParams, geoAggregationField,
 				geoAggegationPrecision);
 		mapResponse.setViewFilteredGeohashAggregation(mapResponse.getGeohashAggregation());
