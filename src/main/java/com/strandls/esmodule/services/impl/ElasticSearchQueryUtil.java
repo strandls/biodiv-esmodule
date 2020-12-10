@@ -8,9 +8,9 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
-import org.elasticsearch.common.geo.builders.MultiPointBuilder;
+import org.elasticsearch.common.geo.builders.GeometryCollectionBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
+import org.elasticsearch.geometry.Geometry;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
@@ -247,18 +247,17 @@ public class ElasticSearchQueryUtil {
 		if (polygon != null && !polygon.isEmpty()) {
 
 			CoordinatesBuilder cb = new CoordinatesBuilder();
+			
 
 			polygon.forEach(i -> {
 				cb.coordinate(i.getLon(), i.getLat());
 			});
-
-			PolygonBuilder polygonSet = new PolygonBuilder(cb);
-			@SuppressWarnings("deprecation")
+			Geometry polygonSet = new PolygonBuilder(cb).buildGeometry();
 			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
 
 			qb.relation(ShapeRelation.INTERSECTS);
 			if (nestedField != null) {
-				NestedQueryBuilder nb = new NestedQueryBuilder("documentCoverages", qb, ScoreMode.Avg);
+				NestedQueryBuilder nb = new NestedQueryBuilder("documentCoverages", qb, ScoreMode.None);
 				masterBoolQuery.filter(nb);
 			} else {
 				masterBoolQuery.filter(qb);
