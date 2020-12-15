@@ -256,12 +256,7 @@ public class ElasticSearchQueryUtil {
 			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
 
 			qb.relation(ShapeRelation.INTERSECTS);
-			if (nestedField != null) {
-				NestedQueryBuilder nb = new NestedQueryBuilder("documentCoverages", qb, ScoreMode.None);
-				masterBoolQuery.filter(nb);
-			} else {
-				masterBoolQuery.filter(qb);
-			}
+			masterBoolQuery.filter(qb);
 		}
 
 	}
