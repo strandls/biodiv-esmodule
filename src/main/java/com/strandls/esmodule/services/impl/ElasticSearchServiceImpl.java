@@ -98,7 +98,6 @@ import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
-import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
@@ -574,7 +573,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	@Override
 	public MapResponse search(String index, String type, MapSearchQuery searchQuery, String geoAggregationField,
 			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
-			String geoShapeFilterField,String nestedField) throws IOException {
+			String geoShapeFilterField) throws IOException {
 
 		logger.info("SEARCH for index: {}, type: {}", index, type);
 
@@ -603,7 +602,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		if (geoShapeFilterField != null) {
-			applyShapeFilter(searchParams, masterBoolQuery, geoShapeFilterField,nestedField);
+			applyShapeFilter(searchParams, masterBoolQuery, geoShapeFilterField);
 		}
 		MapResponse mapResponse = querySearch(index, type, masterBoolQuery, searchParams, geoAggregationField,
 				geoAggegationPrecision);

@@ -174,7 +174,7 @@ public interface ElasticSearchService {
 	 */
 	MapResponse search(String index, String type, MapSearchQuery query, String geoAggregationField,
 			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
-			String geoFilterField, String nestedField) throws IOException;
+			String geoFilterField) throws IOException;
 
 	/**
 	 * Geohash aggregation search on a geo_point field.

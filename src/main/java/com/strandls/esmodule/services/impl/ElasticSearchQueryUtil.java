@@ -8,7 +8,6 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
-import org.elasticsearch.common.geo.builders.GeometryCollectionBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.geometry.Geometry;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -17,7 +16,6 @@ import org.elasticsearch.index.query.GeoBoundingBoxQueryBuilder;
 import org.elasticsearch.index.query.GeoPolygonQueryBuilder;
 import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -236,7 +234,7 @@ public class ElasticSearchQueryUtil {
 	}
 
 	protected void applyShapeFilter(MapSearchParams searchParams, BoolQueryBuilder masterBoolQuery,
-			String geoShapeFilterField, String nestedField) throws IOException {
+			String geoShapeFilterField) throws IOException {
 
 		MapBoundParams mapBoundParams = searchParams.getMapBoundParams();
 		if (mapBoundParams == null)
@@ -270,10 +268,4 @@ public class ElasticSearchQueryUtil {
 		}
 	}
 
-	public MapResponse search(String index, String type, MapSearchQuery searchQuery, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
-			String geoShapeFilterField) throws IOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
