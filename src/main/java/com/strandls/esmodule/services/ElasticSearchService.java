@@ -173,8 +173,8 @@ public interface ElasticSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapResponse search(String index, String type, MapSearchQuery query, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
-			throws IOException;
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
+			String geoFilterField) throws IOException;
 
 	/**
 	 * Geohash aggregation search on a geo_point field.
@@ -307,7 +307,7 @@ public interface ElasticSearchService {
 			List<String> documentIds);
 
 	public String fetchIndex();
-
+	
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
 			Boolean hasMedia);
 }

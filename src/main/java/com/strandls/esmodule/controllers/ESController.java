@@ -483,6 +483,7 @@ public class ESController {
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
 			@QueryParam("termsAggregationField") String termsAggregationField,
+			@QueryParam("geoFilterField") String geoShapeFilterField,
 			@ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
@@ -501,7 +502,7 @@ public class ESController {
 
 		try {
 			return elasticSearchService.search(index, type, query, geoAggregationField, geoAggegationPrecision,
-					onlyFilteredAggregation, termsAggregationField);
+					onlyFilteredAggregation, termsAggregationField,geoShapeFilterField);
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -830,6 +831,7 @@ public class ESController {
 		else
 			return Response.status(Status.BAD_REQUEST).build();
 	}
+	
 	@GET
 	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
 	@Consumes(MediaType.TEXT_PLAIN)
@@ -840,7 +842,7 @@ public class ESController {
 
 	public Response getUploadUserInfo(@PathParam("index") String index, @PathParam("type") String type,
 			@PathParam("authorId") String authorId, @QueryParam("size") String size,
-			@QueryParam("sGroup") String sGroup, @QueryParam("hadMedia") Boolean hasMedia) {
+			@QueryParam("sGroup") String sGroup, @QueryParam("hasMedia") Boolean hasMedia) {
 		try {
 			Long aId = Long.parseLong(authorId);
 			Integer Size = Integer.parseInt(size);
