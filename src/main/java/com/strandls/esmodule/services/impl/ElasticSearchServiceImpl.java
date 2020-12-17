@@ -1497,10 +1497,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	public String forceUpdateIndexField(String index, String type, String field, String value,
 			List<String> documentIds) {
 		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
-//		System.out.println(documentIds.size());
-//		for(String s: documentIds) {
-//			System.out.println("ids = "+s);
-//		}
 		updateRequest.setConflicts("proceed");
 		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
 		updateRequest.setScript(new Script(ScriptType.INLINE, "painless", "ctx._source." + field + "=" + value,

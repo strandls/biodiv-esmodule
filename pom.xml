@@ -187,7 +187,7 @@
 			<artifactId>elasticsearch-rest-high-level-client</artifactId>
 			<version>7.9.3</version>
 		</dependency>
-
+       <!-- https://mvnrepository.com/artifact/org.locationtech.jts/jts-core -->
 		<dependency>
 			<groupId>org.locationtech.jts</groupId>
 			<artifactId>jts-core</artifactId>
