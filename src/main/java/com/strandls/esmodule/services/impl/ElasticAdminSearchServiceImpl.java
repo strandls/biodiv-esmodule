@@ -43,7 +43,10 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.strandls.naksha.es.services.api.ElasticAdminSearchService#postMapping(java.lang.String, java.lang.String, java.lang.String)
+	 * 
+	 * @see
+	 * com.strandls.naksha.es.services.api.ElasticAdminSearchService#postMapping(
+	 * java.lang.String, java.lang.String, java.lang.String)
 	 */
 	@Override
 	public MapQueryResponse postMapping(String index, String mapping) throws IOException {
@@ -64,16 +67,19 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
-	 * @see com.strandls.naksha.es.services.api.ElasticAdminSearchService#getMapping(java.lang.String)
+	 * 
+	 * @see
+	 * com.strandls.naksha.es.services.api.ElasticAdminSearchService#getMapping(java
+	 * .lang.String)
 	 */
 	@Override
 	public MapDocument getMapping(String index) throws IOException {
 
 		logger.info("Trying to get mapping for index: {}", index);
-		
+
 		Request request = new Request("GET", index + "/_mapping");
 		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
@@ -85,7 +91,10 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 
 	/*
 	 * (non-Javadoc)
-	 * @see com.strandls.naksha.es.services.api.ElasticAdminSearchService#createIndex(java.lang.String, java.lang.String)
+	 * 
+	 * @see
+	 * com.strandls.naksha.es.services.api.ElasticAdminSearchService#createIndex(
+	 * java.lang.String, java.lang.String)
 	 */
 	@Override
 	public MapQueryResponse createIndex(String index, String type) throws IOException {
@@ -102,19 +111,19 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	}
 
 	@Override
-	public MapQueryResponse esPostMapping(String index,String mapping) throws IOException {
+	public MapQueryResponse esPostMapping(String index, String mapping) throws IOException {
 		logger.info("Trying to add mapping to index: {}", index);
-		
+
 		StringEntity entity = null;
 		if (!Strings.isNullOrEmpty(mapping)) {
 			entity = new StringEntity(mapping, ContentType.APPLICATION_JSON);
 		}
-		Request request = new Request("PUT", index+"/");
+		Request request = new Request("PUT", index + "/");
 		request.setEntity(entity);
 		Response response = client.performRequest(request);
-		
+
 		String status = response.getStatusLine().getReasonPhrase();
-		
+
 		logger.info("Added mapping to index: {} with status: {}", index, status);
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
@@ -123,55 +132,51 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	public MapQueryResponse reIndex(String index, String mapping) throws IOException, InterruptedException {
 		String filePath = "/app/configurations/scripts/";
 		String script = null;
-		Response response  = deleteIndex(index);
-		if(response != null)
-		{
+		Response response = deleteIndex(index);
+		if (response != null) {
 			MapQueryResponse mapQueryResponse = esPostMapping(index, mapping);
 			String status = mapQueryResponse.getMessage();
-			if(index.equalsIgnoreCase("extended_taxon_definition")){
+			if (index.equalsIgnoreCase("extended_taxon_definition")) {
 				script = "runTaxonElasticMigration.sh";
-				if(status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
-				return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");	
+				if (status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath) == 0) {
+					return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
 				}
-			}
-			else if(index.equalsIgnoreCase("extended_observation")){
-				 script = "refreshObservationMV.sh";
-				 if(startShellScriptProcess(script, filePath)==0) {
+			} else if (index.equalsIgnoreCase("extended_observation")) {
+				script = "refreshObservationMV.sh";
+				if (startShellScriptProcess(script, filePath) == 0) {
 					script = "runObservationElasticMigration.sh";
-					if( status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath)==0) {
+					if (status.equalsIgnoreCase("ok") && startShellScriptProcess(script, filePath) == 0) {
 						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
 					}
 				}
-			}
-			else if(index.equalsIgnoreCase("extended_observation_test")){
-				 script = "refreshObservationMVTest.sh";
-				 System.out.println("\n\nrefreshObservationMVTest.sh\n\n");
-				 if(startShellScriptProcess(script, filePath)==0) {
+			} else if (index.equalsIgnoreCase("extended_observation_test")) {
+				script = "refreshObservationMVTest.sh";
+				System.out.println("\n\nrefreshObservationMVTest.sh\n\n");
+				if (startShellScriptProcess(script, filePath) == 0) {
 					script = "runObservationElasticMigrationTest.sh";
 					System.out.println("\n\runObservationElasticMigrationTest.sh\n\n");
-					if( status.equalsIgnoreCase("ok") && startShellScriptProcessPB(script, filePath)==0) {
+					if (status.equalsIgnoreCase("ok") && startShellScriptProcessPB(script, filePath) == 0) {
 						System.out.println("\n\nInside\n\n");
 						return new MapQueryResponse(MapQueryStatus.UPDATED, "re-indexing successful!");
 					}
 				}
 			}
 		}
-		return new MapQueryResponse(MapQueryStatus.UNKNOWN,"re-indexing failure"); 
+		return new MapQueryResponse(MapQueryStatus.UNKNOWN, "re-indexing failure");
 	}
-	
+
 	private Response deleteIndex(String index) {
 		Request request = new Request("DELETE", index);
 		Response response = null;
 		try {
-			response  = client.performRequest(request);
+			response = client.performRequest(request);
 			return response;
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		}
 		return response;
-		
+
 	}
-	
 
 	private Integer startShellScriptProcess(String script, String filePath) throws InterruptedException {
 		Process process;
@@ -187,12 +192,11 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		}
 		return -1;
 	}
-	
 
 	private Integer startShellScriptProcessPB(String script, String filePath) {
 		Process process;
 		try {
-			
+
 			ProcessBuilder pb = new ProcessBuilder(Arrays.asList("nohup", "sh", script));
 			pb.directory(new File(filePath));
 			pb.redirectErrorStream(false);
