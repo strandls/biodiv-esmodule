@@ -8,6 +8,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
+import org.elasticsearch.common.geo.builders.MultiPolygonBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.geometry.Geometry;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -23,6 +24,8 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
@@ -45,6 +48,8 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 public class ElasticSearchQueryUtil {
 
 	private static final int SHARD_SIZE = 100;
+
+	private final Logger logger = LoggerFactory.getLogger(ElasticSearchQueryUtil.class);
 
 	private QueryBuilder getNestedQueryBuilder(MapQuery query, QueryBuilder queryBuilder) {
 		if (query.getPath() == null)
@@ -241,21 +246,38 @@ public class ElasticSearchQueryUtil {
 			return;
 
 		List<MapGeoPoint> polygon = mapBoundParams.getPolygon();
+		List<List<MapGeoPoint>> multipolygon = mapBoundParams.getMultipolygon();
 
 		if (polygon != null && !polygon.isEmpty()) {
-
-			CoordinatesBuilder cb = new CoordinatesBuilder();
-			
-
-			polygon.forEach(i -> {
-				cb.coordinate(i.getLon(), i.getLat());
-			});
-			Geometry polygonSet = new PolygonBuilder(cb).buildGeometry();
-			GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
-
-			qb.relation(ShapeRelation.INTERSECTS);
-			masterBoolQuery.filter(qb);
+			applyGeoPolygonQuery(polygon, masterBoolQuery, geoShapeFilterField);
+		} else if (multipolygon != null && !multipolygon.isEmpty()) {
+			applyMultiPolygonQuery(multipolygon, masterBoolQuery, geoShapeFilterField);
 		}
+	}
+
+	protected void applyGeoPolygonQuery(List<MapGeoPoint> polygon, BoolQueryBuilder masterBoolQuery,
+			String geoShapeFilterField) throws IOException {
+		CoordinatesBuilder cb = new CoordinatesBuilder();
+
+		polygon.forEach(i -> {
+			cb.coordinate(i.getLon(), i.getLat());
+		});
+		Geometry polygonSet = new PolygonBuilder(cb).buildGeometry();
+		GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
+
+		qb.relation(ShapeRelation.INTERSECTS);
+		masterBoolQuery.should(qb);
+
+	}
+
+	protected void applyMultiPolygonQuery(List<List<MapGeoPoint>> multipolygon, BoolQueryBuilder masterBoolQuery,
+			String geoShapeFilterField) throws IOException {
+		
+			try {
+				applyGeoPolygonQuery(multipolygon.get(0), masterBoolQuery, geoShapeFilterField);
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+			}
 
 	}
 
