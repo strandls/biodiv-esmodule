@@ -272,12 +272,16 @@ public class ElasticSearchQueryUtil {
 
 	protected void applyMultiPolygonQuery(List<List<MapGeoPoint>> multipolygon, BoolQueryBuilder masterBoolQuery,
 			String geoShapeFilterField) throws IOException {
+
 		
+		for (int i = 0; i < multipolygon.size() - 1; i++) {
 			try {
-				applyGeoPolygonQuery(multipolygon.get(0), masterBoolQuery, geoShapeFilterField);
+				applyGeoPolygonQuery(multipolygon.get(i), masterBoolQuery, geoShapeFilterField);
+
 			} catch (IOException e) {
 				logger.error(e.getMessage());
 			}
+		}
 
 	}
 
