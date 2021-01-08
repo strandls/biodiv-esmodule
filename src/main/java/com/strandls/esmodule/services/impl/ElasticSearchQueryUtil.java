@@ -266,7 +266,7 @@ public class ElasticSearchQueryUtil {
 		GeoShapeQueryBuilder qb = QueryBuilders.geoShapeQuery(geoShapeFilterField, polygonSet);
 
 		qb.relation(ShapeRelation.INTERSECTS);
-		masterBoolQuery.should(qb);
+		masterBoolQuery.must(qb);
 
 	}
 
