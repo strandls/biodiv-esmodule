@@ -1,24 +1,26 @@
 package com.strandls.esmodule.models;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class AggregationResponse {
 
-	private HashMap<Object, Long> groupAggregation;
+	private Map<Object, Long> groupAggregation;
 
 	public AggregationResponse() {
 		
 	}
-	public AggregationResponse(HashMap<Object, Long> groupAggregation) {
+	public AggregationResponse(Map<Object, Long> groupAggregation) {
 		super();
 		this.groupAggregation = groupAggregation;
 	}
 
-	public HashMap<Object, Long> getGroupAggregation() {
+	public Map<Object, Long> getGroupAggregation() {
 		return groupAggregation;
 	}
 
-	public void setGroupAggregation(HashMap<Object, Long> groupAggregation) {
+	public void setGroupAggregation(Map<Object, Long> groupAggregation) {
 		this.groupAggregation = groupAggregation;
 	}
 	
