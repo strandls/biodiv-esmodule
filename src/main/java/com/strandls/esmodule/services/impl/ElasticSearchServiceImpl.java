@@ -903,7 +903,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(query);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-			
+
 			for (SearchHit hit : searchResponse.getHits().getHits()) {
 				try {
 					matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), classMapped));
@@ -1029,28 +1029,34 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	@Override
 	public List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
 			Integer authorId, String timeFilter) {
-		AggregationBuilder aggs = buildSortingAggregation(1, null);
-
-		QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
-		QueryBuilder queryBuilder = QueryBuilders.boolQuery()
-				.filter(QueryBuilders.termQuery(Constants.AUTHOR_ID, authorId))
-				.must(QueryBuilders.boolQuery().filter(rangeFilter));
-		SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-		aggs.subAggregation(populateDataAggregation());
-		aggs.subAggregation(termsAggregation(Constants.PROFILE_PIC, "profile_pic.keyword"));
-		aggs.subAggregation(termsAggregation(Constants.AUTHOR_NAME, "name.keyword"));
-		searchSourceBuilder.aggregation(aggs);
-		searchSourceBuilder.query(queryBuilder);
-		searchSourceBuilder.size(0);
-		SearchRequest searchRequest = new SearchRequest(index);
-		SearchResponse searchResponse = null;
-		searchRequest.source(searchSourceBuilder);
 		try {
-			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+			AggregationBuilder aggs = buildSortingAggregation(1, null);
+
+			QueryBuilder rangeFilter = new RangeQueryBuilder("created_on").gte(timeFilter);
+			QueryBuilder queryBuilder = QueryBuilders.boolQuery()
+					.filter(QueryBuilders.termQuery(Constants.AUTHOR_ID, authorId))
+					.must(QueryBuilders.boolQuery().filter(rangeFilter));
+			SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+			aggs.subAggregation(populateDataAggregation());
+			aggs.subAggregation(termsAggregation(Constants.PROFILE_PIC, "profile_pic.keyword"));
+			aggs.subAggregation(termsAggregation(Constants.AUTHOR_NAME, "name.keyword"));
+			searchSourceBuilder.aggregation(aggs);
+			searchSourceBuilder.query(queryBuilder);
+			searchSourceBuilder.size(0);
+			SearchRequest searchRequest = new SearchRequest(index);
+			SearchResponse searchResponse = null;
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+			return processAggregationResponse(searchResponse);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return processAggregationResponse(searchResponse);
+		return null;
+
 	}
 
 	@Override
