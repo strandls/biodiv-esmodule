@@ -1023,6 +1023,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				logger.error(e.getMessage());
 			}
 
+		}else{
+			String field = filterOn;
+			searchSourceBuilder.fetchSource(field, null);
+			searchSourceBuilder.size(100);
+			QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery(field, text);
+			searchSourceBuilder.query(queryBuilder);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					Collection<Object> s = hit.getSourceAsMap().values();
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").split("=")[1]);
+				}
+				
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
 		}
 		results = (List<String>) new HashSet(results).stream().sorted().collect(Collectors.toList());
 		return results;
