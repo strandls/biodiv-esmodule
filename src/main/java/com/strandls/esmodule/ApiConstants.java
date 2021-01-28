@@ -51,10 +51,9 @@ public class ApiConstants {
 	// binning Controller
 	public static final String BINNING = "/binning";
 	public static final String SQUARE = "/square";
-	
+
 	// geo Controller
 	public static final String GEO = "/geo";
 	public static final String WITHIN = "/within";
-
 
 }

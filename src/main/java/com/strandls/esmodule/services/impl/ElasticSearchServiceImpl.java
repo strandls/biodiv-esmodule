@@ -572,8 +572,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	 */
 	@Override
 	public MapResponse search(String index, String type, MapSearchQuery searchQuery, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
-			throws IOException {
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
+			String geoShapeFilterField) throws IOException {
 
 		logger.info("SEARCH for index: {}, type: {}", index, type);
 
@@ -601,7 +601,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			return new MapResponse(new ArrayList<>(), 0, geohashAggregation, geohashAggregation, termsAggregation);
 		}
 
-		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
+		if (geoShapeFilterField != null) {
+			applyShapeFilter(searchParams, masterBoolQuery, geoShapeFilterField);
+		}
 		MapResponse mapResponse = querySearch(index, type, masterBoolQuery, searchParams, geoAggregationField,
 				geoAggegationPrecision);
 		mapResponse.setViewFilteredGeohashAggregation(mapResponse.getGeohashAggregation());
@@ -1017,6 +1019,24 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 					Collection<Object> s = hit.getSourceAsMap().values();
 					results.add(s.toString().replaceAll("[\\[\\]{}]", "").split("=")[2]);
 				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}else{
+			String field = filterOn;
+			searchSourceBuilder.fetchSource(field, null);
+			searchSourceBuilder.size(100);
+			QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery(field, text);
+			searchSourceBuilder.query(queryBuilder);
+			searchRequest.source(searchSourceBuilder);
+			try {
+				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				for (SearchHit hit : searchResponse.getHits().getHits()) {
+					Collection<Object> s = hit.getSourceAsMap().values();
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").split("=")[1]);
+				}
+				
 			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
@@ -1516,7 +1536,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} catch (IOException e) {
 			logger.error("Force Update Exception - {}", e.getMessage());
 		}
-		return "failed to update documents";
+		return null;
 	}
 
 	@Override

@@ -23,6 +23,8 @@ public class UtilityMethods {
 		esIndexConstants.put("etd", "extended_taxon_definition");
 		esIndexConstants.put("eo","extended_observation");
 		esIndexConstants.put("eaf","extended_activity_feed");
+		esIndexConstants.put("ed","document");
+		
 		
 		esIndexTypeConstant.put("er","_doc");
 	}

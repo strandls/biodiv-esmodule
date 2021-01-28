@@ -9,6 +9,7 @@ import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
+import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -172,8 +173,8 @@ public interface ElasticSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapResponse search(String index, String type, MapSearchQuery query, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
-			throws IOException;
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,
+			String geoFilterField) throws IOException;
 
 	/**
 	 * Geohash aggregation search on a geo_point field.
@@ -276,8 +277,8 @@ public interface ElasticSearchService {
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter);
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type, Integer authorId,
+			String timeFilter);
 
 	/**
 	 * @param index
@@ -301,9 +302,10 @@ public interface ElasticSearchService {
 	public FilterPanelData getListPanel(String index, String type);
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
-	
-	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
-	
+
+	public String forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds);
+
 	public String fetchIndex();
 	
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
