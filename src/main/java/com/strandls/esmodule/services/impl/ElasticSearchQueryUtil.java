@@ -228,7 +228,7 @@ public class ElasticSearchQueryUtil {
 		}
 
 		List<MapGeoPoint> polygon = mapBoundParams.getPolygon();
-		if (polygon != null && !polygon.isEmpty()) {
+		if (polygon != null && !polygon.isEmpty() && geoAggregationField != null) {
 			List<GeoPoint> geoPoints = new ArrayList<>();
 			for (MapGeoPoint point : polygon)
 				geoPoints.add(new GeoPoint(point.getLat(), point.getLon()));
