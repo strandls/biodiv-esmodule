@@ -537,7 +537,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(50000);
 
-		} else {
+		}
+
+		else {
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
 
@@ -717,7 +719,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 			groupMonth = new LinkedHashMap<Object, Long>();
 
-		} else {
+		}
+
+		else {
 			groupMonth = new HashMap<Object, Long>();
 		}
 

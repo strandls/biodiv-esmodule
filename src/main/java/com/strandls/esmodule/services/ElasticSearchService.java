@@ -225,7 +225,6 @@ public interface ElasticSearchService {
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
 
-
 	/**
 	 * @param index  : index to be searched upon
 	 * @param type   : type within an index
@@ -276,8 +275,8 @@ public interface ElasticSearchService {
 	 * @param authorId
 	 * @return
 	 */
-	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type,
-			Integer authorId,String timeFilter);
+	List<LinkedHashMap<String, LinkedHashMap<String, String>>> getUserScore(String index, String type, Integer authorId,
+			String timeFilter);
 
 	/**
 	 * @param index
@@ -301,11 +300,12 @@ public interface ElasticSearchService {
 	public FilterPanelData getListPanel(String index, String type);
 
 	public List<ObservationLatLon> getSpeciesCoordinates(String index, String type, String speciesId);
-	
-	public String forceUpdateIndexField(String index, String type, String field, String value,List<String>documentIds);
-	
+
+	public String forceUpdateIndexField(String index, String type, String field, String value,
+			List<String> documentIds);
+
 	public String fetchIndex();
-	
+
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
 			Boolean hasMedia);
 }
