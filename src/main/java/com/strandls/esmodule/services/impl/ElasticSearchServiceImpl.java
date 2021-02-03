@@ -1034,7 +1034,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
 					Collection<Object> s = hit.getSourceAsMap().values();
-					results.add(s.toString().replaceAll("[\\[\\]{}]", "").split("=")[1]);
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace("name=", ""));
 				}
 				
 			} catch (Exception e) {
