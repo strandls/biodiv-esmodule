@@ -2,6 +2,7 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -116,6 +117,7 @@ import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.SpeciesGroup;
 import com.strandls.esmodule.models.TraitValue;
 import com.strandls.esmodule.models.Traits;
+import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.UserGroup;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -530,7 +532,27 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		BoolQueryBuilder masterBoolQuery = getBoolQueryBuilder(searchQuery);
 
 		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
-		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+
+		AggregationBuilder aggregation;
+
+		if (filter.equals("max_voted_reco.scientific_name.keyword")) {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(50000);
+
+		}
+
+		else if (filter.equals("author_id")) {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(20000).order(BucketOrder.count(false));
+
+		}
+
+		else {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+
+		}
+
 		AggregationResponse aggregationResponse = new AggregationResponse();
 
 		if (filter.equals(Constants.MAX_VOTED_RECO) || filter.equals(Constants.MVR_TAXON_STATUS)) {
@@ -560,6 +582,51 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		}
 		return aggregationResponse;
+	}
+
+	public List<UploadersInfo> uploaderInfo(String index, String userIds) {
+
+		List<String> l = Arrays.asList(userIds.split(","));
+
+		List<UploadersInfo> result = new ArrayList<>();
+
+		for (int i = 0; i < l.size(); i++) {
+			String id = l.get(i);
+
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", id));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(1);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+
+					String name = String.valueOf(sourceMap.get("created_by"));
+					String pic = String.valueOf(sourceMap.get("profile_pic"));
+
+					Long authorId = Long.parseLong(String.valueOf(sourceMap.get("author_id")));
+
+					UploadersInfo uploaderInfo = new UploadersInfo(name, pic, authorId);
+
+					result.add(uploaderInfo);
+
+				}
+			} catch (IOException e) { // TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		return (result);
+
 	}
 
 	/*
@@ -699,7 +766,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.source(sourceBuilder);
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
-		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
+		Map<Object, Long> groupMonth;
+
+		if (filter.equals("max_voted_reco.scientific_name.keyword") || filter.equals("author_id")) {
+
+			groupMonth = new LinkedHashMap<Object, Long>();
+
+		} else {
+			groupMonth = new HashMap<Object, Long>();
+		}
 
 		if (filter.equals(Constants.MVR_TAXON_STATUS) || filter.equals(Constants.MAX_VOTED_RECO)) {
 			Filter filterAgg = response.getAggregations().get(Constants.AVAILABLE);
@@ -903,7 +978,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchSourceBuilder.query(query);
 			searchRequest.source(searchSourceBuilder);
 			searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-			
+
 			for (SearchHit hit : searchResponse.getHits().getHits()) {
 				try {
 					matchedResults.add(objectMapper.readValue(hit.getSourceAsString(), classMapped));
