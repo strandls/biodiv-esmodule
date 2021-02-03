@@ -1032,9 +1032,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			searchRequest.source(searchSourceBuilder);
 			try {
 				searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+				String[] resRegex = field.split("\\.");
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
 					Collection<Object> s = hit.getSourceAsMap().values();
-					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace("name=", ""));
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace(resRegex[1]+"=", ""));
 				}
 				
 			} catch (Exception e) {
