@@ -530,7 +530,21 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		BoolQueryBuilder masterBoolQuery = getBoolQueryBuilder(searchQuery);
 
 		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
-		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+
+		AggregationBuilder aggregation;
+
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME)) {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(50000);
+
+		}
+
+		else {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+
+		}
+
 		AggregationResponse aggregationResponse = new AggregationResponse();
 
 		if (filter.equals(Constants.MAX_VOTED_RECO) || filter.equals(Constants.MVR_TAXON_STATUS)) {
@@ -701,7 +715,19 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.source(sourceBuilder);
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
-		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
+		Map<Object, Long> groupMonth;
+
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME)) {
+
+			groupMonth = new LinkedHashMap<Object, Long>();
+
+		}
+
+		else {
+			groupMonth = new HashMap<Object, Long>();
+		}
+
+		// HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
 		if (filter.equals(Constants.MVR_TAXON_STATUS) || filter.equals(Constants.MAX_VOTED_RECO)) {
 			Filter filterAgg = response.getAggregations().get(Constants.AVAILABLE);

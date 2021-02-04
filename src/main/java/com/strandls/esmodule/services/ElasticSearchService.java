@@ -226,7 +226,6 @@ public interface ElasticSearchService {
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
 
-
 	/**
 	 * @param index  : index to be searched upon
 	 * @param type   : type within an index
@@ -307,7 +306,7 @@ public interface ElasticSearchService {
 			List<String> documentIds);
 
 	public String fetchIndex();
-	
+
 	public AuthorUploadedObservationInfo getUserData(String index, String type, Long userId, Integer size, Long sGroup,
 			Boolean hasMedia);
 }

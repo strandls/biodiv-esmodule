@@ -707,8 +707,7 @@ public class ESController {
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
 			@DefaultValue("") @QueryParam("value") String sortingValue,
-			@DefaultValue("20") @QueryParam("how_many") String topUser,
-			@QueryParam("time") String timePeriod) {
+			@DefaultValue("20") @QueryParam("how_many") String topUser, @QueryParam("time") String timePeriod) {
 
 		String timeFilter = null;
 		if (sortingValue.isEmpty())
@@ -831,7 +830,7 @@ public class ESController {
 		else
 			return Response.status(Status.BAD_REQUEST).build();
 	}
-	
+
 	@GET
 	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
 	@Consumes(MediaType.TEXT_PLAIN)
