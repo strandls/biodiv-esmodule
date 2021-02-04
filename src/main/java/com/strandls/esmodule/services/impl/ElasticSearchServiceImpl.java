@@ -1010,7 +1010,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			String field = "all_reco_vote.scientific_name.name";
 			searchSourceBuilder.fetchSource(field, null);
 			searchSourceBuilder.size(100);
-			QueryBuilder queryBuilder = QueryBuilders.matchPhraseQuery(field, text);
+			QueryBuilder queryBuilder = QueryBuilders.matchPhrasePrefixQuery(field, text);
 			searchSourceBuilder.query(queryBuilder);
 			searchRequest.source(searchSourceBuilder);
 			try {
