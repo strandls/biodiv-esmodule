@@ -535,13 +535,13 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		AggregationBuilder aggregation;
 
-		if (filter.equals("max_voted_reco.scientific_name.keyword")) {
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME)) {
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(50000);
 
 		}
 
-		else if (filter.equals("author_id")) {
+		else if (filter.equals(Constants.AUTHOR_ID)) {
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(20000).order(BucketOrder.count(false));
 
@@ -768,7 +768,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		Map<Object, Long> groupMonth;
 
-		if (filter.equals("max_voted_reco.scientific_name.keyword") || filter.equals("author_id")) {
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)) {
 
 			groupMonth = new LinkedHashMap<Object, Long>();
 
