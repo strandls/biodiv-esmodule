@@ -19,4 +19,5 @@ public class Constants {
 	public static final String ACTIVITY_SCORE = "activity_score";
 	public static final String MVR_SCIENTIFIC_NAME="max_voted_reco.scientific_name.keyword";
 
+
 }

@@ -2,6 +2,7 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -116,6 +117,7 @@ import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.SpeciesGroup;
 import com.strandls.esmodule.models.TraitValue;
 import com.strandls.esmodule.models.Traits;
+import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.UserGroup;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -539,6 +541,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		}
 
+
+		else if (filter.equals(Constants.AUTHOR_ID)) {
+
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(20000).order(BucketOrder.count(false));
+
+		}
+
+
 		else {
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
@@ -574,6 +584,51 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		}
 		return aggregationResponse;
+	}
+
+	public List<UploadersInfo> uploaderInfo(String index, String userIds) {
+
+		List<String> l = Arrays.asList(userIds.split(","));
+
+		List<UploadersInfo> result = new ArrayList<>();
+
+		for (int i = 0; i < l.size(); i++) {
+			String id = l.get(i);
+
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", id));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(1);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+
+					String name = String.valueOf(sourceMap.get("created_by"));
+					String pic = String.valueOf(sourceMap.get("profile_pic"));
+
+					Long authorId = Long.parseLong(String.valueOf(sourceMap.get("author_id")));
+
+					UploadersInfo uploaderInfo = new UploadersInfo(name, pic, authorId);
+
+					result.add(uploaderInfo);
+
+				}
+			} catch (IOException e) { // TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		}
+		return (result);
+
 	}
 
 	/*
@@ -717,17 +772,15 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		Map<Object, Long> groupMonth;
 
-		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME)) {
+
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)) {
 
 			groupMonth = new LinkedHashMap<Object, Long>();
 
-		}
-
-		else {
+		} else {
 			groupMonth = new HashMap<Object, Long>();
 		}
 
-		// HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
 
 		if (filter.equals(Constants.MVR_TAXON_STATUS) || filter.equals(Constants.MAX_VOTED_RECO)) {
 			Filter filterAgg = response.getAggregations().get(Constants.AVAILABLE);

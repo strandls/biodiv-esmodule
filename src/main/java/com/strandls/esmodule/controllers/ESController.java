@@ -47,6 +47,7 @@ import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
+import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
@@ -89,6 +90,27 @@ public class ESController {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String ping() {
 		return "PONG";
+	}
+
+	@GET
+	@Path(ApiConstants.UPLOADERSINFO+"/{index}/{userIds}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Fetch details of uploaders", notes = "Returns a list of objects containing name,profile pic and author id of uploaders", response = UploadersInfo.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Exception", response = String.class),
+			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public Response getUploaderInfo(@PathParam("index") String index, @PathParam("userIds") String userIds) {
+
+		try {
+
+			List<UploadersInfo> result = elasticSearchService.uploaderInfo(index, userIds);
+
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+
 	}
 
 	@POST

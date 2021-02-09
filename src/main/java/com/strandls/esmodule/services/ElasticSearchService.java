@@ -18,6 +18,7 @@ import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
+import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -29,6 +30,8 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
  * @author mukund
  */
 public interface ElasticSearchService {
+	
+	List<UploadersInfo> uploaderInfo(String index,String userIds);
 
 	/**
 	 * Creates a document in es
