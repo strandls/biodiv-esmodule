@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UploadersInfo {
 
-	String name;
-	String pic;
-	Long authorId;
+	private String name;
+	private String pic;
+	private Long authorId;
 
 	public UploadersInfo() {
 		super();

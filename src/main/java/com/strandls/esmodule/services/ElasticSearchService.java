@@ -30,7 +30,7 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
  */
 public interface ElasticSearchService {
 	
-	List<UploadersInfo> uploaderInfo(String index,String userIds);
+	public List<UploadersInfo> uploaderInfo(String index,String userIds);
 
 	/**
 	 * Creates a document in es
