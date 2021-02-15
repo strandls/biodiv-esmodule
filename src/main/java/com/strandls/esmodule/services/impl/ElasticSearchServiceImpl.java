@@ -622,8 +622,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 					result.add(uploaderInfo);
 
 				}
-			} catch (IOException e) { // TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (Exception e) { 
+				logger.error(e.getMessage());
 			}
 
 		}
