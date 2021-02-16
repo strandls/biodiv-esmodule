@@ -11,7 +11,6 @@ public class UploadersInfo {
 
 	public UploadersInfo() {
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	public UploadersInfo(String name, String pic, Long authorId) {
