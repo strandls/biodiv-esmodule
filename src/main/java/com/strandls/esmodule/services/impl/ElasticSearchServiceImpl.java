@@ -100,6 +100,7 @@ import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -541,7 +542,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		}
 
-		else if (filter.equals(Constants.AUTHOR_ID)) {
+		else if (filter.equals(Constants.AUTHOR_ID) || filter.equals(Constants.IDENTIFIER_ID)) {
 
 			aggregation = AggregationBuilders.terms(filter).field(filter).size(20000).order(BucketOrder.count(false));
 
@@ -584,6 +585,71 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return aggregationResponse;
 	}
 
+	public List<IdentifiersInfo> identifierInfo(String index, String userIds) {
+		List<String> l = Arrays.asList(userIds.split(","));
+
+		List<IdentifiersInfo> result = new ArrayList<>();
+
+		for (int i = 0; i < l.size(); i++) {
+			String id = l.get(i);
+
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("all_reco_vote.authors_voted.id", id));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(1);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+
+					List<Object> allRecoVote = new ArrayList<>((List<Object>) sourceMap.get("all_reco_vote"));
+
+					for (int n = 0; n < allRecoVote.size(); n++) {
+
+						Map<String, Object> identificationObject = new HashMap<>(
+								(Map<String, Object>) allRecoVote.get(n));
+
+						List<Object> authorsVoted = new ArrayList<>(
+								(List<Object>) identificationObject.get("authors_voted"));
+
+						for (int k = 0; k < authorsVoted.size(); k++) {
+
+							Map<String, Object> identifier = new HashMap<>((Map<String, Object>) authorsVoted.get(k));
+							String authorId = String.valueOf(identifier.get("id"));
+
+							if (authorId.equals(id)) {
+
+								String name = String.valueOf(identifier.get("name"));
+								String pic = String.valueOf(identifier.get("profile_pic"));
+								Long identifierId = Long.parseLong(String.valueOf(identifier.get("id")));
+
+								IdentifiersInfo identifierInfo = new IdentifiersInfo(name, pic, identifierId);
+
+								result.add(identifierInfo);
+								break;
+							}
+
+						}
+
+					}
+
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+
+		}
+		return (result);
+	}
+
 	public List<UploadersInfo> uploaderInfo(String index, String userIds) {
 
 		List<String> l = Arrays.asList(userIds.split(","));
@@ -620,7 +686,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 					result.add(uploaderInfo);
 
 				}
-			} catch (Exception e) { 
+			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
 
@@ -768,7 +834,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		Map<Object, Long> groupMonth;
 
-		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)) {
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)
+				|| filter.equals(Constants.IDENTIFIER_ID)) {
 
 			groupMonth = new LinkedHashMap<Object, Long>();
 

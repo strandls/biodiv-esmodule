@@ -10,6 +10,7 @@ import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
 import com.strandls.esmodule.models.MapResponse;
@@ -31,6 +32,7 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 public interface ElasticSearchService {
 	
 	public List<UploadersInfo> uploaderInfo(String index,String userIds);
+	public List<IdentifiersInfo> identifierInfo(String index, String userIds);
 
 	/**
 	 * Creates a document in es

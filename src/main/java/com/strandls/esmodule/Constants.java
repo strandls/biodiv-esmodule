@@ -18,6 +18,7 @@ public class Constants {
 	public static final String GROUP_BY_AUTHOR = "group_by_author";
 	public static final String ACTIVITY_SCORE = "activity_score";
 	public static final String MVR_SCIENTIFIC_NAME="max_voted_reco.scientific_name.keyword";
+	public static final String 	IDENTIFIER_ID="all_reco_vote.authors_voted.id";
 	
 
 }
