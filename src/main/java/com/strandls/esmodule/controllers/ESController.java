@@ -91,7 +91,7 @@ public class ESController {
 	public String ping() {
 		return "PONG";
 	}
-	
+
 	@GET
 	@Path(ApiConstants.IDENTIFIERSINFO + "/{index}/{userIds}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -103,18 +103,15 @@ public class ESController {
 
 	public Response getIdentifierInfo(@PathParam("index") String index, @PathParam("userIds") String userIds) {
 		try {
-
 			List<IdentifiersInfo> result = elasticSearchService.identifierInfo(index, userIds);
-
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
-
 	}
 
 	@GET
-	@Path(ApiConstants.UPLOADERSINFO+"/{index}/{userIds}")
+	@Path(ApiConstants.UPLOADERSINFO + "/{index}/{userIds}")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 
@@ -124,14 +121,11 @@ public class ESController {
 	public Response getUploaderInfo(@PathParam("index") String index, @PathParam("userIds") String userIds) {
 
 		try {
-
 			List<UploadersInfo> result = elasticSearchService.uploaderInfo(index, userIds);
-
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
-
 	}
 
 	@POST
