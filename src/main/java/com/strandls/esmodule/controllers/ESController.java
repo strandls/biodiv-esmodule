@@ -37,6 +37,7 @@ import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapDocument;
@@ -93,7 +94,25 @@ public class ESController {
 	}
 
 	@GET
-	@Path(ApiConstants.UPLOADERSINFO+"/{index}/{userIds}")
+	@Path(ApiConstants.IDENTIFIERSINFO + "/{index}/{userIds}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Fetch details of identifiers", notes = "Returns a list of objects containing name,profile pic and author id of identifiers", response = IdentifiersInfo.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Exception", response = String.class),
+			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
+
+	public Response getIdentifierInfo(@PathParam("index") String index, @PathParam("userIds") String userIds) {
+		try {
+			List<IdentifiersInfo> result = elasticSearchService.identifierInfo(index, userIds);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.UPLOADERSINFO + "/{index}/{userIds}")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
 
@@ -103,14 +122,11 @@ public class ESController {
 	public Response getUploaderInfo(@PathParam("index") String index, @PathParam("userIds") String userIds) {
 
 		try {
-
 			List<UploadersInfo> result = elasticSearchService.uploaderInfo(index, userIds);
-
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
-
 	}
 
 	@POST
