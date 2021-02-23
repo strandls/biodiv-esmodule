@@ -3,7 +3,6 @@ package com.strandls.esmodule.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-
 public class IdentifiersInfo {
 
 	private String name;
