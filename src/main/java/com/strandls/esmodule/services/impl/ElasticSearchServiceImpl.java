@@ -1381,6 +1381,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			if (masterBoolQuery != null)
 				sourceBuilder.query(masterBoolQuery);
 			sourceBuilder.aggregation(geoGridAggregationBuilder);
+			sourceBuilder.trackTotalHits(true);
 
 			SearchRequest searchRequest = new SearchRequest(index);
 			searchRequest.source(sourceBuilder);
