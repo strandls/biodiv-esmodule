@@ -96,10 +96,12 @@ import com.strandls.esmodule.Constants;
 import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
+import com.strandls.esmodule.models.CommonNames;
 import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.Hierarchy;
 import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
@@ -116,6 +118,7 @@ import com.strandls.esmodule.models.ObservationMapInfo;
 import com.strandls.esmodule.models.ObservationNearBy;
 import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.SpeciesGroup;
+import com.strandls.esmodule.models.TaxonomyInfo;
 import com.strandls.esmodule.models.TraitValue;
 import com.strandls.esmodule.models.Traits;
 import com.strandls.esmodule.models.UploadersInfo;
@@ -654,6 +657,99 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 		}
 		return (result);
+	}
+
+	@SuppressWarnings("unchecked")
+	public TaxonomyInfo taxonomyDetails(Long taxonId) {
+		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery().must(QueryBuilders.termQuery("id", taxonId));
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.query(boolQueryBuilder);
+		SearchRequest request = new SearchRequest("extended_taxon_definition");
+		request.source(sourceBuilder);
+		SearchResponse response;
+		TaxonomyInfo result = new TaxonomyInfo();
+		try {
+			response = client.search(request, RequestOptions.DEFAULT);
+			SearchHit[] hit = response.getHits().getHits();
+			Map<String, Object> sourceMap = hit[0].getSourceAsMap();
+
+			String path = sourceMap.get("path").toString();
+			Long id = Long.valueOf(sourceMap.get("id").toString());
+			Long rank = Long.valueOf(sourceMap.get("rank").toString());
+			Long species_id = Long.valueOf(0);
+			List<Object> commonNamesObject = (List<Object>) sourceMap.get("common_names");
+			List<CommonNames> commonNames = new ArrayList<>();
+
+			for (int i = 0; i < commonNamesObject.size(); i++) {
+
+				Map<String, Object> commonNamesMap = (Map<String, Object>) commonNamesObject.get(i);
+				CommonNames com = new CommonNames();
+				if (commonNamesMap.get("name") != null) {
+					com.setCommon_names(commonNamesMap.get("name").toString());
+				}
+
+				if (commonNamesMap.get("language_id") != null) {
+					com.setLanguage_id(Long.valueOf(commonNamesMap.get("language_id").toString()));
+				}
+				if (commonNamesMap.get("language_name") != null) {
+					com.setLanguage_name(commonNamesMap.get("language_name").toString());
+				}
+
+				commonNames.add(com);
+			}
+
+			result.setCommon_names(commonNames);
+			if (sourceMap.get("species_id") != null) {
+				species_id = Long.valueOf(sourceMap.get("species_id").toString());
+				result.setSpecies_id(species_id);
+			}
+
+			String taxonstatus = sourceMap.get("status").toString();
+			result.setId(id);
+			result.setRank(rank);
+			result.setTaxonstatus(taxonstatus);
+			String[] taxonIds = path.split("_");
+			List<String> names = new ArrayList<>();
+			List<Long> ranks = getRanksAndNamesForTaxonIds(taxonIds, names);
+			List<Hierarchy> list = new ArrayList<>();
+			for (int i = 0; i < taxonIds.length; i++) {
+				Hierarchy node = new Hierarchy();
+				node.setNormalized_name(names.get(i));
+				node.setTaxon_id(Long.valueOf(taxonIds[i]));
+				node.setRank(ranks.get(i));
+				list.add(node);
+			}
+			result.setHierarchy(list);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return result;
+	}
+
+	private List<Long> getRanksAndNamesForTaxonIds(String[] taxonIds, List<String> names) {
+		List<Long> result = new ArrayList<>();
+		for (int i = 0; i < taxonIds.length; i++) {
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("id", taxonIds[i]));
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
+			SearchRequest request = new SearchRequest("extended_taxon_definition");
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+					Long rank = Long.valueOf(sourceMap.get("rank").toString());
+					String name = sourceMap.get("name").toString();
+					names.add(name);
+					result.add(rank);
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		}
+		return result;
 	}
 
 	/*

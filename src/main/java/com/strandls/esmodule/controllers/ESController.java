@@ -47,6 +47,7 @@ import com.strandls.esmodule.models.MapSortType;
 import com.strandls.esmodule.models.ObservationInfo;
 import com.strandls.esmodule.models.ObservationLatLon;
 import com.strandls.esmodule.models.ObservationNearBy;
+import com.strandls.esmodule.models.TaxonomyInfo;
 import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -90,6 +91,19 @@ public class ESController {
 	@Produces(MediaType.TEXT_PLAIN)
 	public String ping() {
 		return "PONG";
+	}
+
+	@GET
+	@Path("/taxonomyDetails/{taxonId}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response getTaxonomyDetails(@PathParam("taxonId") Long taxonId) {
+		try {
+			TaxonomyInfo result = elasticSearchService.taxonomyDetails(taxonId);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
 	}
 
 	@GET
