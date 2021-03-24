@@ -191,6 +191,7 @@ public class ESController {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	@PUT
 	@Path(ApiConstants.BULK_UPDATE + "/{index}/{type}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -391,7 +392,7 @@ public class ESController {
 	}
 
 	@GET
-	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{maxVotedRecoId}")
+	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -399,9 +400,10 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("maxVotedRecoId") String maxVotedRecoId) throws IOException {
+			@QueryParam("id") String id,
+			@DefaultValue("true") @QueryParam("isMaxVotedRecoId") Boolean isMaxVotedRecoId) throws IOException {
 		try {
-			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, maxVotedRecoId);
+			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, id, isMaxVotedRecoId);
 			return Response.status(Status.OK).entity(info).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
@@ -482,8 +484,7 @@ public class ESController {
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
 			@QueryParam("termsAggregationField") String termsAggregationField,
-			@QueryParam("geoFilterField") String geoShapeFilterField,
-			@ApiParam(name = "query") MapSearchQuery query) {
+			@QueryParam("geoFilterField") String geoShapeFilterField, @ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
@@ -501,7 +502,7 @@ public class ESController {
 
 		try {
 			return elasticSearchService.search(index, type, query, geoAggregationField, geoAggegationPrecision,
-					onlyFilteredAggregation, termsAggregationField,geoShapeFilterField);
+					onlyFilteredAggregation, termsAggregationField, geoShapeFilterField);
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
@@ -706,8 +707,7 @@ public class ESController {
 	public Response topUsers(@DefaultValue("eaf") @PathParam("index") String index,
 			@DefaultValue("er") @PathParam("type") String type,
 			@DefaultValue("") @QueryParam("value") String sortingValue,
-			@DefaultValue("20") @QueryParam("how_many") String topUser,
-			@QueryParam("time") String timePeriod) {
+			@DefaultValue("20") @QueryParam("how_many") String topUser, @QueryParam("time") String timePeriod) {
 
 		String timeFilter = null;
 		if (sortingValue.isEmpty())
@@ -830,7 +830,7 @@ public class ESController {
 		else
 			return Response.status(Status.BAD_REQUEST).build();
 	}
-	
+
 	@GET
 	@Path(ApiConstants.USERINFO + "/{index}/{type}/{authorId}")
 	@Consumes(MediaType.TEXT_PLAIN)

@@ -8,7 +8,6 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.CoordinatesBuilder;
-import org.elasticsearch.common.geo.builders.MultiPolygonBuilder;
 import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.geometry.Geometry;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -30,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapGeoPoint;
-import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.query.MapAndBoolQuery;
 import com.strandls.esmodule.models.query.MapAndMatchPhraseQuery;
@@ -185,10 +183,14 @@ public class ElasticSearchQueryUtil {
 		return masterBoolQuery;
 	}
 
-	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
+	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String id, Boolean isMaxVotedRecoId) {
 
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id",
-				maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = null;
+		if (isMaxVotedRecoId)
+			masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", id);
+		else
+//			taxonomyId
+			masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.hierarchy.taxon_id", id);
 		return masterBoolQueryBuilder;
 	}
 
@@ -273,7 +275,6 @@ public class ElasticSearchQueryUtil {
 	protected void applyMultiPolygonQuery(List<List<MapGeoPoint>> multipolygon, BoolQueryBuilder masterBoolQuery,
 			String geoShapeFilterField) throws IOException {
 
-		
 		for (int i = 0; i < multipolygon.size() - 1; i++) {
 			try {
 				applyGeoPolygonQuery(multipolygon.get(i), masterBoolQuery, geoShapeFilterField);

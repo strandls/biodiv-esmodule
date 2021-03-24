@@ -9,7 +9,6 @@ import com.strandls.esmodule.indexes.pojo.ExtendedTaxonDefinition;
 import com.strandls.esmodule.models.AggregationResponse;
 import com.strandls.esmodule.models.AuthorUploadedObservationInfo;
 import com.strandls.esmodule.models.FilterPanelData;
-import com.strandls.esmodule.models.ForceUpdateResponse;
 import com.strandls.esmodule.models.GeoHashAggregationData;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -222,7 +221,7 @@ public interface ElasticSearchService {
 	 * @param speciesName the name of SpeciesName
 	 * @return {@link ObservationInfo}
 	 */
-	ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException;
+	ObservationInfo getObservationRightPan(String index, String type, String id, Boolean isMaxVotedRecoId) throws IOException;
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
 
