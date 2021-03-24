@@ -796,7 +796,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
 		Map<Object, Long> groupMonth;
-		
+
 		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)
 				|| filter.equals(Constants.IDENTIFIER_ID)) {
 
@@ -804,7 +804,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		} else {
 			groupMonth = new HashMap<Object, Long>();
 		}
-		
+
 		if (filter.equals(Constants.MVR_TAXON_STATUS) || filter.equals(Constants.MAX_VOTED_RECO)) {
 			Filter filterAgg = response.getAggregations().get(Constants.AVAILABLE);
 			if (filterAgg != null) {
@@ -827,9 +827,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public ObservationInfo getObservationRightPan(String index, String type, String maxVotedRecoId) throws IOException {
+	public ObservationInfo getObservationRightPan(String index, String type, String id, Boolean isMaxVotedRecoId)
+			throws IOException {
 
-		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(id, isMaxVotedRecoId);
 		AggregationBuilder aggregation = AggregationBuilders.terms("observed_in_month")
 				.field("observed_in_month.keyword").size(1000);
 

@@ -225,9 +225,10 @@ public interface ElasticSearchService {
 	 * @param index       the index in which to search
 	 * @param type        the type in which to search
 	 * @param speciesName the name of SpeciesName
+	 * @param isMaxVotedRecoId 
 	 * @return {@link ObservationInfo}
 	 */
-	ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException;
+	ObservationInfo getObservationRightPan(String index, String type, String speciesName, Boolean isMaxVotedRecoId) throws IOException;
 
 	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
 

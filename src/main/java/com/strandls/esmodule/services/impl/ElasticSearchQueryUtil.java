@@ -27,7 +27,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import com.strandls.esmodule.models.MapBoundParams;
 import com.strandls.esmodule.models.MapBounds;
 import com.strandls.esmodule.models.MapGeoPoint;
-import com.strandls.esmodule.models.MapResponse;
 import com.strandls.esmodule.models.MapSearchParams;
 import com.strandls.esmodule.models.query.MapAndBoolQuery;
 import com.strandls.esmodule.models.query.MapAndMatchPhraseQuery;
@@ -180,10 +179,14 @@ public class ElasticSearchQueryUtil {
 		return masterBoolQuery;
 	}
 
-	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
+	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String id, Boolean isMaxVotedRecoId) {
 
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id",
-				maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQueryBuilder = null;
+		if (isMaxVotedRecoId)
+			masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", id);
+		else
+//			taxonomyId
+			masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.hierarchy.taxon_id", id);
 		return masterBoolQueryBuilder;
 	}
 

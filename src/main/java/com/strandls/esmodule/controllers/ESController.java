@@ -430,7 +430,7 @@ public class ESController {
 	}
 
 	@GET
-	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}/{maxVotedRecoId}")
+	@Path(ApiConstants.RIGHTPAN + "/{index}/{type}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -438,9 +438,10 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
-			@PathParam("maxVotedRecoId") String maxVotedRecoId) throws IOException {
+			@QueryParam("id") String id,
+			@DefaultValue("true") @QueryParam("isMaxVotedRecoId") Boolean isMaxVotedRecoId) throws IOException {
 		try {
-			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, maxVotedRecoId);
+			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, id,isMaxVotedRecoId);
 			return Response.status(Status.OK).entity(info).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
