@@ -739,6 +739,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String[] includes = { Constants.OBSERVATION_ID, Constants.REPR_IMAGE_URL, Constants.MAX_VOTED_RECO,
 				Constants.LOCATION };
 		sourceBuilder.fetchSource(includes, null);
+		sourceBuilder.sort("created_on", SortOrder.DESC);
 
 		SearchRequest request = new SearchRequest(index);
 		request.source(sourceBuilder);
@@ -752,10 +753,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		Terms frommonth = response.getAggregations().get("observed_in_month");
 		for (Terms.Bucket entry : frommonth.getBuckets()) {
 			groupMonth.put(entry.getKey(), entry.getDocCount());
-		}
-
-		if (!isMaxVotedRecoId) {
-			return new ObservationInfo(groupMonth, null, null);
 		}
 		for (SearchHit hit : response.getHits().getHits()) {
 
