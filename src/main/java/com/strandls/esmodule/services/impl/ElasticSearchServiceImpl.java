@@ -841,6 +841,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String[] includes = { Constants.OBSERVATION_ID, Constants.REPR_IMAGE_URL, Constants.MAX_VOTED_RECO,
 				Constants.LOCATION };
 		sourceBuilder.fetchSource(includes, null);
+		sourceBuilder.sort("created_on", SortOrder.DESC);
 
 		SearchRequest request = new SearchRequest(index);
 		request.source(sourceBuilder);
