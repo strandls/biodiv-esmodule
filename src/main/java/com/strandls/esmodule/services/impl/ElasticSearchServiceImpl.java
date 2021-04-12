@@ -725,9 +725,10 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public ObservationInfo getObservationRightPan(String index, String type, String maxVotedRecoId) throws IOException {
+	public ObservationInfo getObservationRightPan(String index, String type, String id, Boolean isMaxVotedRecoId)
+			throws IOException {
 
-		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(maxVotedRecoId);
+		MatchPhraseQueryBuilder masterBoolQuery = getBoolQueryBuilderObservationPan(id, isMaxVotedRecoId);
 		AggregationBuilder aggregation = AggregationBuilders.terms("observed_in_month")
 				.field("observed_in_month.keyword").size(1000);
 
@@ -738,6 +739,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String[] includes = { Constants.OBSERVATION_ID, Constants.REPR_IMAGE_URL, Constants.MAX_VOTED_RECO,
 				Constants.LOCATION };
 		sourceBuilder.fetchSource(includes, null);
+		sourceBuilder.sort("created_on", SortOrder.DESC);
 
 		SearchRequest request = new SearchRequest(index);
 		request.source(sourceBuilder);
@@ -747,6 +749,11 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		List<SimilarObservation> similarObservation = new ArrayList<SimilarObservation>();
 		List<ObservationMapInfo> latlon = new ArrayList<ObservationMapInfo>();
 
+		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
+		Terms frommonth = response.getAggregations().get("observed_in_month");
+		for (Terms.Bucket entry : frommonth.getBuckets()) {
+			groupMonth.put(entry.getKey(), entry.getDocCount());
+		}
 		for (SearchHit hit : response.getHits().getHits()) {
 
 			Location loc = objectMapper.readValue(
@@ -767,12 +774,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 					maxVotedReco.getScientific_name(),
 					String.valueOf(hit.getSourceAsMap().get(Constants.REPR_IMAGE_URL))));
 		}
-		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
-		Terms frommonth = response.getAggregations().get("observed_in_month");
-		for (Terms.Bucket entry : frommonth.getBuckets()) {
-			groupMonth.put(entry.getKey(), entry.getDocCount());
-		}
-
 		return new ObservationInfo(groupMonth, similarObservation, latlon);
 	}
 
@@ -1023,7 +1024,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				logger.error(e.getMessage());
 			}
 
-		}else{
+		} else {
 			String field = filterOn;
 			searchSourceBuilder.fetchSource(field, null);
 			searchSourceBuilder.size(15);
@@ -1035,9 +1036,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				String[] resRegex = field.split("\\.");
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
 					Collection<Object> s = hit.getSourceAsMap().values();
-					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace(resRegex[1]+"=", ""));
+					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace(resRegex[1] + "=", ""));
 				}
-				
+
 			} catch (Exception e) {
 				logger.error(e.getMessage());
 			}
@@ -1540,6 +1541,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public String fetchIndex() {
 		Map<String, Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
