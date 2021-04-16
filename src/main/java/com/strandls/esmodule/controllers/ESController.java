@@ -94,9 +94,13 @@ public class ESController {
 	}
 
 	@GET
-	@Path("/taxonomyDetails/{taxonId}")
+	@Path(ApiConstants.TAXONOMYDETAILS+"/{taxonId}")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Fetch taxon details", notes = "Returns taxon details for a taxon id", response = TaxonomyInfo.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "Exception", response = String.class),
+			@ApiResponse(code = 500, message = "ERROR", response = String.class) })
 	public Response getTaxonomyDetails(@PathParam("taxonId") Long taxonId) {
 		try {
 			TaxonomyInfo result = elasticSearchService.taxonomyDetails(taxonId);

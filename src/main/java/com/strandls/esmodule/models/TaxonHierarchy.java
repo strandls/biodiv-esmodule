@@ -1,16 +1,19 @@
 package com.strandls.esmodule.models;
 
-public class Hierarchy {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TaxonHierarchy {
 
 	private Long rank;
 	private String normalized_name;
 	private Long taxon_id;
 
-	public Hierarchy() {
+	public TaxonHierarchy() {
 		super();
 	}
 
-	public Hierarchy(Long taxon_id, String normalized_name, Long rank) {
+	public TaxonHierarchy(Long taxon_id, String normalized_name, Long rank) {
 		super();
 		this.taxon_id = taxon_id;
 		this.normalized_name = normalized_name;

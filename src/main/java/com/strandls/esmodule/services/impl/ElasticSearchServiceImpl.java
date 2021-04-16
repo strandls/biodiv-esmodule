@@ -101,7 +101,7 @@ import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
-import com.strandls.esmodule.models.Hierarchy;
+import com.strandls.esmodule.models.TaxonHierarchy;
 import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
@@ -302,6 +302,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		logger.info("Trying to bulk upload index: {}, type: {}", index, type);
 
 		JsonNode[] jsons = parseJson(jsonArray, responses);
+		// System.out.println(responses.get(0).getMessage());
 		if (!responses.isEmpty()) {
 			logger.error("Json exception-{}, while trying to bulk upload for index:{}, type: {}",
 					responses.get(0).getMessage(), index, type);
@@ -309,10 +310,9 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		}
 
 		BulkRequest request = new BulkRequest();
-
 		for (JsonNode json : jsons) {
 			IndexRequest ir = new IndexRequest(index);
-			ir.id(json.get("id").asText());
+			ir.id(json.get("id").asText()); 
 			ir.source(json.toString(), XContentType.JSON);
 			request.add(ir);
 
@@ -672,48 +672,93 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			response = client.search(request, RequestOptions.DEFAULT);
 			SearchHit[] hit = response.getHits().getHits();
 			Map<String, Object> sourceMap = hit[0].getSourceAsMap();
-
 			String path = sourceMap.get("path").toString();
-			Long id = Long.valueOf(sourceMap.get("id").toString());
-			Long rank = Long.valueOf(sourceMap.get("rank").toString());
-			Long species_id = Long.valueOf(0);
-			List<Object> commonNamesObject = (List<Object>) sourceMap.get("common_names");
-			List<CommonNames> commonNames = new ArrayList<>();
+			Long id = Long.parseLong(String.valueOf(sourceMap.get("id")));
 
-			for (int i = 0; i < commonNamesObject.size(); i++) {
-
-				Map<String, Object> commonNamesMap = (Map<String, Object>) commonNamesObject.get(i);
-				CommonNames com = new CommonNames();
-				if (commonNamesMap.get("name") != null) {
-					com.setCommon_names(commonNamesMap.get("name").toString());
-				}
-
-				if (commonNamesMap.get("language_id") != null) {
-					com.setLanguage_id(Long.valueOf(commonNamesMap.get("language_id").toString()));
-				}
-				if (commonNamesMap.get("language_name") != null) {
-					com.setLanguage_name(commonNamesMap.get("language_name").toString());
-				}
-
-				commonNames.add(com);
+			if (sourceMap.get("id") != null) {
+				result.setId(id);
 			}
 
-			result.setCommon_names(commonNames);
+			Long rank = Long.parseLong(String.valueOf(sourceMap.get("rank")));
+			if (sourceMap.get("rank") != null) {
+				result.setRank(rank);
+			}
+
 			if (sourceMap.get("species_id") != null) {
-				species_id = Long.valueOf(sourceMap.get("species_id").toString());
+				Long species_id = Long.valueOf(String.valueOf(sourceMap.get("species_id")));
 				result.setSpecies_id(species_id);
 			}
 
+			List<Object> commonNamesObject = (List<Object>) sourceMap.get("common_names");
+			List<CommonNames> commonNames = new ArrayList<>();
+			if (sourceMap.get("common_names") != null) {
+				for (int i = 0; i < commonNamesObject.size(); i++) {
+
+					Map<String, Object> commonNamesMap = (Map<String, Object>) commonNamesObject.get(i);
+					CommonNames com = new CommonNames();
+					if (commonNamesMap.get("name") != null) {
+						com.setCommon_names(commonNamesMap.get("name").toString());
+					}
+
+					if (commonNamesMap.get("language_id") != null) {
+						com.setLanguage_id(Long.valueOf(commonNamesMap.get("language_id").toString()));
+					}
+					if (commonNamesMap.get("language_name") != null) {
+						com.setLanguage_name(commonNamesMap.get("language_name").toString());
+					}
+
+					commonNames.add(com);
+				}
+
+				result.setCommon_names(commonNames);
+			}
+
+			String position = sourceMap.get("position").toString();
+			if (sourceMap.get("position").toString() != null) {
+				result.setPosition(position);
+			}
+			String italicised_form = sourceMap.get("italicised_form").toString();
+			if (sourceMap.get("italicised_form").toString() != null) {
+				result.setItalicised_form(italicised_form);
+			}
+
+			Long accepted_name_id = (Long) sourceMap.get("accepted_ids");
+			if (sourceMap.get("accepted_ids") != null) {
+				result.setAccepted_name_id(accepted_name_id);
+			}
+
 			String taxonstatus = sourceMap.get("status").toString();
-			result.setId(id);
-			result.setRank(rank);
-			result.setTaxonstatus(taxonstatus);
+
+			if (sourceMap.get("status") != null) {
+				result.setTaxonstatus(taxonstatus);
+			}
+
+			String cannonicalName = sourceMap.get("canonical_form").toString();
+			if (sourceMap.get("canonical_form") != null) {
+				result.setCannonicalName(cannonicalName);
+			}
+
+			String name = sourceMap.get("name").toString();
+			if (sourceMap.get("name") != null) {
+				result.setName(name);
+			}
+
+			if (sourceMap.get("group_id") != null) {
+				Long groupId = Long.parseLong(String.valueOf(sourceMap.get("group_id")));
+				result.setGroup_id(groupId);
+			}
+
+			if (sourceMap.get("group_name") != null) {
+				String groupName = sourceMap.get("group_name").toString();
+				result.setGroup_name(groupName);
+			}
+
 			String[] taxonIds = path.split("_");
 			List<String> names = new ArrayList<>();
 			List<Long> ranks = getRanksAndNamesForTaxonIds(taxonIds, names);
-			List<Hierarchy> list = new ArrayList<>();
+			List<TaxonHierarchy> list = new ArrayList<>();
 			for (int i = 0; i < taxonIds.length; i++) {
-				Hierarchy node = new Hierarchy();
+				TaxonHierarchy node = new TaxonHierarchy();
 				node.setNormalized_name(names.get(i));
 				node.setTaxon_id(Long.valueOf(taxonIds[i]));
 				node.setRank(ranks.get(i));
@@ -742,8 +787,12 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 					Map<String, Object> sourceMap = hit.getSourceAsMap();
 					Long rank = Long.valueOf(sourceMap.get("rank").toString());
 					String name = sourceMap.get("name").toString();
-					names.add(name);
-					result.add(rank);
+					if (sourceMap.get("name") != null) {
+						names.add(name);
+					}
+					if (sourceMap.get("rank") != null) {
+						result.add(rank);
+					}
 				}
 			} catch (Exception e) {
 				logger.error(e.getMessage());
