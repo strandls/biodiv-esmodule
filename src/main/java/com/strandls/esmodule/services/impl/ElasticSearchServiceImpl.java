@@ -2,6 +2,7 @@ package com.strandls.esmodule.services.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -99,6 +100,7 @@ import com.strandls.esmodule.models.CustomFieldValues;
 import com.strandls.esmodule.models.CustomFields;
 import com.strandls.esmodule.models.FilterPanelData;
 import com.strandls.esmodule.models.GeoHashAggregationData;
+import com.strandls.esmodule.models.IdentifiersInfo;
 import com.strandls.esmodule.models.Location;
 import com.strandls.esmodule.models.MapDocument;
 import com.strandls.esmodule.models.MapQueryResponse;
@@ -116,6 +118,7 @@ import com.strandls.esmodule.models.SimilarObservation;
 import com.strandls.esmodule.models.SpeciesGroup;
 import com.strandls.esmodule.models.TraitValue;
 import com.strandls.esmodule.models.Traits;
+import com.strandls.esmodule.models.UploadersInfo;
 import com.strandls.esmodule.models.UserGroup;
 import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
@@ -530,7 +533,17 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		BoolQueryBuilder masterBoolQuery = getBoolQueryBuilder(searchQuery);
 
 		applyMapBounds(searchParams, masterBoolQuery, geoAggregationField);
-		AggregationBuilder aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+
+		AggregationBuilder aggregation;
+
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME)) {
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(50000);
+		} else if (filter.equals(Constants.AUTHOR_ID) || filter.equals(Constants.IDENTIFIER_ID)) {
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(20000).order(BucketOrder.count(false));
+		} else {
+			aggregation = AggregationBuilders.terms(filter).field(filter).size(1000);
+		}
+
 		AggregationResponse aggregationResponse = new AggregationResponse();
 
 		if (filter.equals(Constants.MAX_VOTED_RECO) || filter.equals(Constants.MVR_TAXON_STATUS)) {
@@ -560,6 +573,87 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 
 		}
 		return aggregationResponse;
+	}
+
+	public List<IdentifiersInfo> identifierInfo(String index, String userIds) {
+		List<String> l = Arrays.asList(userIds.split(","));
+		List<IdentifiersInfo> result = new ArrayList<>();
+
+		for (int i = 0; i < l.size(); i++) {
+			String id = l.get(i);
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("all_reco_vote.authors_voted.id", id));
+
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(1);
+
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+					List<Object> allRecoVote = new ArrayList<>((List<Object>) sourceMap.get("all_reco_vote"));
+
+					for (int n = 0; n < allRecoVote.size(); n++) {
+						Map<String, Object> identificationObject = new HashMap<>(
+								(Map<String, Object>) allRecoVote.get(n));
+						List<Object> authorsVoted = new ArrayList<>(
+								(List<Object>) identificationObject.get("authors_voted"));
+
+						for (int k = 0; k < authorsVoted.size(); k++) {
+							Map<String, Object> identifier = new HashMap<>((Map<String, Object>) authorsVoted.get(k));
+							String authorId = String.valueOf(identifier.get("id"));
+							if (authorId.equals(id)) {
+								String name = String.valueOf(identifier.get("name"));
+								String pic = String.valueOf(identifier.get("profile_pic"));
+								Long identifierId = Long.parseLong(String.valueOf(identifier.get("id")));
+								IdentifiersInfo identifierInfo = new IdentifiersInfo(name, pic, identifierId);
+								result.add(identifierInfo);
+								break;
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		}
+		return (result);
+	}
+
+	public List<UploadersInfo> uploaderInfo(String index, String userIds) {
+		List<String> l = Arrays.asList(userIds.split(","));
+		List<UploadersInfo> result = new ArrayList<>();
+
+		for (int i = 0; i < l.size(); i++) {
+			String id = l.get(i);
+			BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+					.must(QueryBuilders.termQuery("author_id", id));
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+
+			sourceBuilder.query(boolQueryBuilder);
+			sourceBuilder.size(1);
+			SearchRequest request = new SearchRequest(index);
+			request.source(sourceBuilder);
+			SearchResponse response;
+			try {
+				response = client.search(request, RequestOptions.DEFAULT);
+				for (SearchHit hit : response.getHits().getHits()) {
+					Map<String, Object> sourceMap = hit.getSourceAsMap();
+					String name = String.valueOf(sourceMap.get("created_by"));
+					String pic = String.valueOf(sourceMap.get("profile_pic"));
+					Long authorId = Long.parseLong(String.valueOf(sourceMap.get("author_id")));
+					UploadersInfo uploaderInfo = new UploadersInfo(name, pic, authorId);
+					result.add(uploaderInfo);
+				}
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
+		}
+		return (result);
 	}
 
 	/*
@@ -701,7 +795,14 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		request.source(sourceBuilder);
 		SearchResponse response = client.search(request, RequestOptions.DEFAULT);
 
-		HashMap<Object, Long> groupMonth = new HashMap<Object, Long>();
+		Map<Object, Long> groupMonth;
+
+		if (filter.equals(Constants.MVR_SCIENTIFIC_NAME) || filter.equals(Constants.AUTHOR_ID)
+				|| filter.equals(Constants.IDENTIFIER_ID)) {
+			groupMonth = new LinkedHashMap<Object, Long>();
+		} else {
+			groupMonth = new HashMap<Object, Long>();
+		}
 
 		if (filter.equals(Constants.MVR_TAXON_STATUS) || filter.equals(Constants.MAX_VOTED_RECO)) {
 			Filter filterAgg = response.getAggregations().get(Constants.AVAILABLE);
@@ -1299,6 +1400,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			if (masterBoolQuery != null)
 				sourceBuilder.query(masterBoolQuery);
 			sourceBuilder.aggregation(geoGridAggregationBuilder);
+			sourceBuilder.trackTotalHits(true);
 
 			SearchRequest searchRequest = new SearchRequest(index);
 			searchRequest.source(sourceBuilder);
