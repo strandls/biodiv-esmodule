@@ -177,7 +177,7 @@ public interface ElasticSearchService {
 	 * @throws IOException throws {@link IOException}
 	 */
 	MapResponse search(String index, String type, MapSearchQuery query, String geoAggregationField,
-			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField)
+			Integer geoAggegationPrecision, Boolean onlyFilteredAggregation, String termsAggregationField,String geoShapeFilterField)
 			throws IOException;
 
 	/**
