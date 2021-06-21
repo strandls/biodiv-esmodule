@@ -6,8 +6,8 @@
 	<artifactId>esmodule</artifactId>
 	<packaging>war</packaging>
 	<version>1.0.0</version>
-	<name>ESModule Maven Webapp</name>
-	<url>http://maven.apache.org</url>
+	<name>biodiv-esmodule</name>
+	<url>https://github.com/strandls/biodiv-esmodule</url>
 
 	<properties>
 
