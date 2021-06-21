@@ -26,6 +26,11 @@
 		<srcDir>src/main/webapp</srcDir>
 		<base-path>/esmodule-api/api</base-path>
 		<location>com.strandls.esmodule</location>
+
+		<!-- Sonar Cloud -->
+		<sonar.projectKey>strandls_biodiv-esmodule</sonar.projectKey>
+		<sonar.organization>strandls</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 
 	<distributionManagement>
