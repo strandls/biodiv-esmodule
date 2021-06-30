@@ -122,9 +122,17 @@ public class UtilityMethods {
 			listIndex ++;
 		}
 		
+		List<Integer>indexScoresArray=new ArrayList<>(indexScores.keySet());
 		
-		indexScores.keySet().removeAll(negativeScoreIndexes);
-		records.removeAll(negativeScoreIndexes);
+		for(Integer index:negativeScoreIndexes) {
+			if(indexScoresArray.size()>0) {
+				indexScoresArray.remove(index);				
+			}
+			if(records.size()>0) {
+				records.remove(index);				
+			}
+		}
+		
 		
 		LinkedHashMap<Integer, Integer> rankedIndex = sortHashMaponValue(indexScores);
 		ArrayList<Integer> orderedIndexes = new ArrayList<>(rankedIndex.keySet());

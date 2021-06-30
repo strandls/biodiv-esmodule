@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.logging.log4j.core.util.FileUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
@@ -67,7 +68,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 		SearchRequest searchRequest = getDownloadSearchRequest(query, geoField, index);
 		DownloadFileType downloadFileType = fileType != null ? DownloadFileType.valueOf(fileType)
 				: DownloadFileType.JSON;
-
+		
 		File zipFile = new File(filePath + File.separator + System.currentTimeMillis() + ".zip");
 
 		try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipFile))) {
