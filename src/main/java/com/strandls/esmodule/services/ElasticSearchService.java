@@ -228,7 +228,7 @@ public interface ElasticSearchService {
 	 */
 	ObservationInfo getObservationRightPan(String index, String type, String speciesName) throws IOException;
 
-	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double Lon) throws IOException;
+	List<ObservationNearBy> observationNearBy(String index, String type, Double lat, Double lon) throws IOException;
 
 
 	/**

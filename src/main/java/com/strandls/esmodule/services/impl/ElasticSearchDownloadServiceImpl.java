@@ -59,9 +59,11 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 	@Override
 	public String downloadSearch(String index, String type, MapSearchQuery query, String geoField, String filePath,
 			String fileType) throws IOException {
-		logger.info("Download request received for index: {}, type: {}, fileType: {}", index, type, fileType);
+		String indexParam=index.replaceAll("[\n\r\t]", "_");
+		String typeParam=type.replaceAll("[\n\r\t]", "_");
+		logger.info("Download request received for index: {}, type: {}, fileType: {}", indexParam, typeParam, fileType);
 
-		SearchRequest searchRequest = getDownloadSearchRequest(query, geoField, index, type);
+		SearchRequest searchRequest = getDownloadSearchRequest(query, geoField, index);
 		DownloadFileType downloadFileType = fileType != null ? DownloadFileType.valueOf(fileType)
 				: DownloadFileType.JSON;
 
@@ -79,7 +81,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			}
 		}
 
-		logger.info("Download completed for index: {}, type: {}, file: {}", index, type, zipFile.getAbsolutePath());
+		logger.info("Download completed for index: {}, type: {}, file: {}", indexParam, typeParam, zipFile.getAbsolutePath());
 
 		return zipFile.getAbsolutePath();
 	}
@@ -135,7 +137,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 
 	}
 
-	private SearchRequest getDownloadSearchRequest(MapSearchQuery query, String geoField, String index, String type) {
+	private SearchRequest getDownloadSearchRequest(MapSearchQuery query, String geoField, String index) {
 		
 		MapSearchParams searchParams = query.getSearchParams();
 		BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(query);

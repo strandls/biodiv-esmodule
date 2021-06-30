@@ -792,9 +792,9 @@ public class ESController {
 		type = utilityMethods.getEsIndexTypeConstant(type);
 		List<LinkedHashMap<String, LinkedHashMap<String, String>>> records = elasticSearchService.getUserScore(index,
 				type, Integer.parseInt(authorId), timeFilter);
-		UserScore record = new UserScore();
-		record.setRecord(records);
-		return Response.status(Status.OK).entity(record).build();
+		UserScore userScoreRecord = new UserScore();
+		userScoreRecord.setRecord(records);
+		return Response.status(Status.OK).entity(userScoreRecord).build();
 	}
 
 	@GET
@@ -880,11 +880,11 @@ public class ESController {
 			@QueryParam("sGroup") String sGroup, @QueryParam("hasMedia") Boolean hasMedia) {
 		try {
 			Long aId = Long.parseLong(authorId);
-			Integer Size = Integer.parseInt(size);
+			Integer sizeInteger = Integer.parseInt(size);
 			Long speciesGroup = null;
 			if (sGroup != null)
 				speciesGroup = Long.parseLong(sGroup);
-			AuthorUploadedObservationInfo result = elasticSearchService.getUserData(index, type, aId, Size,
+			AuthorUploadedObservationInfo result = elasticSearchService.getUserData(index, type, aId, sizeInteger,
 					speciesGroup, hasMedia);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {

@@ -175,8 +175,8 @@ public class ElasticSearchQueryUtil {
 	
 	public MatchPhraseQueryBuilder getBoolQueryBuilderObservationPan(String maxVotedRecoId) {
 		
-		MatchPhraseQueryBuilder masterBoolQueryBuilder = QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
-		return masterBoolQueryBuilder;
+		return QueryBuilders.matchPhraseQuery("max_voted_reco.id", maxVotedRecoId);
+		
 	}
 
 	protected GeoGridAggregationBuilder getGeoGridAggregationBuilder(String field, Integer precision) {

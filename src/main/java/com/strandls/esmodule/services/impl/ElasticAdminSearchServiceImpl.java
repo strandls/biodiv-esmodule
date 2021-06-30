@@ -44,8 +44,8 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	 */
 	@Override
 	public MapQueryResponse postMapping(String index, String mapping) throws IOException {
-
-		logger.info("Trying to add mapping to index: {}", index);
+		String indexParam=index.replaceAll("[\n\r\t]", "_");
+		logger.info("Trying to add mapping to index: {}", indexParam);
 
 		StringEntity entity = null;
 		if (!Strings.isNullOrEmpty(mapping)) {
@@ -57,7 +57,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
-		logger.info("Added mapping to index: {} with status: {}", index, status);
+		logger.info("Added mapping to index: {} with status: {}", indexParam, status);
 
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
@@ -68,14 +68,14 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	 */
 	@Override
 	public MapDocument getMapping(String index) throws IOException {
-
-		logger.info("Trying to get mapping for index: {}", index);
+		String indexParam=index.replaceAll("[\n\r\t]", "_");
+		logger.info("Trying to get mapping for index: {}", indexParam);
 		
 		Request request = new Request("GET", index + "/_mapping");
 		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
-		logger.info("Retrieved mapping for index: {} with status: {}", index, status);
+		logger.info("Retrieved mapping for index: {} with status: {}", indexParam, status);
 
 		return new MapDocument(EntityUtils.toString(response.getEntity()));
 	}
@@ -86,14 +86,14 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 	 */
 	@Override
 	public MapQueryResponse createIndex(String index, String type) throws IOException {
-
-		logger.info("Trying to create index: {}", index);
+		String indexParam=index.replaceAll("[\n\r\t]", "_");
+		logger.info("Trying to create index: {}", indexParam);
 
 		Request request = new Request("PUT", "/" + index);
 		Response response = client.performRequest(request);
 		String status = response.getStatusLine().getReasonPhrase();
 
-		logger.info("Created index: {} with status: {}", index, status);
+		logger.info("Created index: {} with status: {}", indexParam, status);
 
 		return new MapQueryResponse(MapQueryStatus.UNKNOWN, status);
 	}
@@ -162,8 +162,7 @@ public class ElasticAdminSearchServiceImpl implements ElasticAdminSearchService 
 		Process process;
 		try {
 			process = Runtime.getRuntime().exec("sh " + script, null, new File(filePath));
-			int exitCode = process.waitFor();
-			return exitCode;
+			return process.waitFor();
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 		} catch (InterruptedException e) {
