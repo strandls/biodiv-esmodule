@@ -30,7 +30,6 @@ import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.utils.Utils;
 
-
 /**
  * Implementation of {@link ElasticSearchDownloadService}
  * 
@@ -59,9 +58,11 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 	@Override
 	public String downloadSearch(String index, String type, MapSearchQuery query, String geoField, String filePath,
 			String fileType) throws IOException {
-		String indexParam=index.replaceAll("[\n\r\t]", "_");
-		String typeParam=type.replaceAll("[\n\r\t]", "_");
-		logger.info("Download request received for index: {}, type: {}, fileType: {}", indexParam, typeParam, fileType);
+		String indexParam = index.replaceAll("[\n\r\t]", "_");
+		String typeParam = type.replaceAll("[\n\r\t]", "_");
+		String fileTypeParam = fileType.replaceAll("[\n\r\t]", "_");
+		logger.info("Download request received for index: {}, type: {}, fileType: {}", indexParam, typeParam,
+				fileTypeParam);
 
 		SearchRequest searchRequest = getDownloadSearchRequest(query, geoField, index);
 		DownloadFileType downloadFileType = fileType != null ? DownloadFileType.valueOf(fileType)
@@ -80,15 +81,15 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 				downloadJson(searchRequest, zipOut);
 			}
 		}
-
-		logger.info("Download completed for index: {}, type: {}, file: {}", indexParam, typeParam, zipFile.getAbsolutePath());
+		String zipFilePathParam = zipFile.getAbsolutePath().replaceAll("[\n\r\t]", "_");
+		logger.info("Download completed for index: {}, type: {}, file: {}", indexParam, typeParam, zipFilePathParam);
 
 		return zipFile.getAbsolutePath();
 	}
 
 	private void downloadJson(SearchRequest searchRequest, ZipOutputStream out) throws IOException {
 
-		SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 		do {
 
 			for (SearchHit hit : searchResponse.getHits().getHits())
@@ -97,7 +98,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.scroll(request,RequestOptions.DEFAULT);
+			searchResponse = client.scroll(request, RequestOptions.DEFAULT);
 
 		} while (searchResponse.getHits().getHits().length != 0);
 
@@ -105,7 +106,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 
 	private void downloadCSV(SearchRequest searchRequest, ZipOutputStream out) throws IOException {
 
-		SearchResponse searchResponse = client.search(searchRequest,RequestOptions.DEFAULT);
+		SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
 		boolean first = true;
 		Set<String> headerSet = new HashSet<>();
@@ -132,25 +133,23 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			SearchScrollRequest request = new SearchScrollRequest(searchResponse.getScrollId());
 			request.scroll(new TimeValue(60000));
 
-			searchResponse = client.scroll(request,RequestOptions.DEFAULT);
+			searchResponse = client.scroll(request, RequestOptions.DEFAULT);
 		} while (searchResponse.getHits().getHits().length != 0);
 
 	}
 
 	private SearchRequest getDownloadSearchRequest(MapSearchQuery query, String geoField, String index) {
-		
+
 		MapSearchParams searchParams = query.getSearchParams();
 		BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(query);
-		
-		
+
 		applyMapBounds(searchParams, boolQueryBuilder, geoField);
-		
+
 		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
 		sourceBuilder.query(boolQueryBuilder);
 		sourceBuilder.size(5000);
 		SearchRequest searchRequest = new SearchRequest(index);
-		
-		
+
 		searchRequest.source(sourceBuilder);
 		searchRequest.scroll(new TimeValue(60000));
 		return searchRequest;
