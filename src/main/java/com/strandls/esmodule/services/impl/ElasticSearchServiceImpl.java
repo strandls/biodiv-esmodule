@@ -482,7 +482,7 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 		String indexParam = index.replaceAll("[\n\r\t]", "_");
 		String typeParam = type.replaceAll("[\n\r\t]", "_");
 		String keyParam = key.replaceAll("[\n\r\t]", "_");
-		String valueParam = value.replaceAll("[\n\r\t]", "_");
+		String valueParam = value != null ? value.replaceAll("[\n\r\t]", "_") : null;
 
 		logger.info("Term search for index: {}, type: {}, key: {}, value: {}", indexParam, typeParam, keyParam,
 				valueParam);
@@ -1714,7 +1714,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 			}
 			Long total = Long.parseLong(String.valueOf(terms.getBuckets().size()));
 			return new AuthorUploadedObservationInfo(total, maxVotedRecoFreqs);
-			
 
 		} catch (Exception e) {
 			logger.error(e.getMessage());

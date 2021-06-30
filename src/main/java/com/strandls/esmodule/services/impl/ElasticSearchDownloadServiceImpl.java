@@ -60,7 +60,7 @@ public class ElasticSearchDownloadServiceImpl extends ElasticSearchQueryUtil imp
 			String fileType) throws IOException {
 		String indexParam = index.replaceAll("[\n\r\t]", "_");
 		String typeParam = type.replaceAll("[\n\r\t]", "_");
-		String fileTypeParam = fileType.replaceAll("[\n\r\t]", "_");
+		String fileTypeParam = fileType!=null?fileType.replaceAll("[\n\r\t]", "_"):null;
 		logger.info("Download request received for index: {}, type: {}, fileType: {}", indexParam, typeParam,
 				fileTypeParam);
 
