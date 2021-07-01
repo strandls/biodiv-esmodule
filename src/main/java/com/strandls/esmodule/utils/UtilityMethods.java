@@ -54,7 +54,7 @@ public class UtilityMethods {
 		return null;
 	}
 	
-	@SuppressWarnings("unlikely-arg-type")
+	//@SuppressWarnings("unlikely-arg-type")
 	public final List<ExtendedTaxonDefinition> rankDocument(List<ExtendedTaxonDefinition> records, String field,
 			String fieldText) {
 		int listIndex = 0;
@@ -122,21 +122,18 @@ public class UtilityMethods {
 			listIndex ++;
 		}
 		
-		List<Integer>indexScoresArray=new ArrayList<>(indexScores.keySet());
+		indexScores.keySet().removeAll(negativeScoreIndexes);
 		
-		for(Integer index:negativeScoreIndexes) {
-			if(indexScoresArray.size()>0) {
-				indexScoresArray.remove(index);				
-			}
-			if(records.size()>0) {
-				records.remove(index);				
-			}
-		}
-		
-		
+        List<ExtendedTaxonDefinition>finalRecords=new ArrayList<>();
+        for(int i=0;i<negativeScoreIndexes.size();i++) {
+        	if(!negativeScoreIndexes.contains(i)) {
+        		finalRecords.add(records.get(i));
+        	}
+        }
+        
 		LinkedHashMap<Integer, Integer> rankedIndex = sortHashMaponValue(indexScores);
 		ArrayList<Integer> orderedIndexes = new ArrayList<>(rankedIndex.keySet());
-		return orderDocuments(orderedIndexes, records);
+		return orderDocuments(orderedIndexes, finalRecords);
 	}
 
 	

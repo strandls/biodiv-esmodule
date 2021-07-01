@@ -136,7 +136,7 @@ public class ElasticSearchGeoServiceImpl implements ElasticSearchGeoService {
 			}
 			return hashToCount;
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 		return null;
 	}
