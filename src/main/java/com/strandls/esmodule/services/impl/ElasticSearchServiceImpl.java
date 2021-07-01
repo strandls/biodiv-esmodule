@@ -1618,28 +1618,6 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 	}
 
 	@Override
-	public String forceUpdateIndexField(String index, String type, String field, String value,
-			List<String> documentIds) {
-		UpdateByQueryRequest updateRequest = new UpdateByQueryRequest(index);
-		updateRequest.setConflicts("proceed");
-		updateRequest.setQuery(new TermsQueryBuilder("_id", documentIds));
-		updateRequest.setScript(new Script(ScriptType.INLINE, "painless", "ctx._source." + field + "=" + value,
-				Collections.emptyMap()));
-		updateRequest.setRefresh(true);
-		try {
-			BulkByScrollResponse response = client.updateByQuery(updateRequest, RequestOptions.DEFAULT);
-			if (response.getUpdated() == response.getTotal()) {
-				logger.info("update status - {}", response.getBulkFailures());
-				return "Documents Sent - " + documentIds.size() + "\nDocument found in index - " + response.getTotal()
-						+ "\nDocument Updated - " + response.getUpdated();
-			}
-		} catch (IOException e) {
-			logger.error("Force Update Exception - {}", e.getMessage());
-		}
-		return "failed to update documents";
-	}
-
-	@Override
 	public String fetchIndex() {
 		Map<String, Set<String>> indexOuterLevelProperties = new HashMap<String, Set<String>>();
 		try {

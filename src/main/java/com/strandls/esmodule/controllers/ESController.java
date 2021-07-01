@@ -52,7 +52,6 @@ import com.strandls.esmodule.models.query.MapBoolQuery;
 import com.strandls.esmodule.models.query.MapRangeQuery;
 import com.strandls.esmodule.models.query.MapSearchQuery;
 import com.strandls.esmodule.services.ElasticAdminSearchService;
-import com.strandls.esmodule.services.ElasticSearchDownloadService;
 import com.strandls.esmodule.services.ElasticSearchService;
 import com.strandls.esmodule.utils.ReIndexingThread;
 import com.strandls.esmodule.utils.UtilityMethods;
@@ -78,9 +77,6 @@ public class ESController {
 
 	@Inject
 	public ElasticAdminSearchService elasticAdminSearchService;
-
-	@Inject
-	public ElasticSearchDownloadService elasticSearchDownloadService;
 
 	@Inject
 	public UtilityMethods utilityMethods;
@@ -545,25 +541,6 @@ public class ESController {
 		}
 	}
 
-	@POST
-	@Path(ApiConstants.DOWNLOAD + "/{index}/{type}")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Download of Document", notes = "Returns path of Document", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
-
-	public String download(@PathParam("index") String index, @PathParam("type") String type,
-			@QueryParam("geoField") String geoField, @QueryParam("filePath") String filePath,
-			@QueryParam("fileType") String fileType, @ApiParam(name = "query") MapSearchQuery query) {
-		try {
-			return elasticSearchDownloadService.downloadSearch(index, type, query, geoField, filePath, fileType);
-		} catch (IOException e) {
-			throw new WebApplicationException(
-					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
-		}
-	}
-
 	// ---------- Admin Services -------------
 
 	@GET
@@ -833,24 +810,6 @@ public class ESController {
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
-	}
-
-	@GET
-	@Path(ApiConstants.FORCEUPDATE)
-	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.TEXT_PLAIN)
-	@ApiOperation(value = "force update of field in elastic index", notes = "return succesful response", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "Unable to make update", response = String.class) })
-	public Response forceUpdateIndexField(@QueryParam("index") String index, @QueryParam("type") String type,
-			@QueryParam("field") String field, @QueryParam("value") String value, @QueryParam("ids") String ids) {
-		List<String> documentIds = new ArrayList<String>(Arrays.asList(ids.trim().split("\\s*,\\s*")));
-		index = utilityMethods.getEsIndexConstants(index);
-		type = utilityMethods.getEsIndexTypeConstant(type);
-		String response = elasticSearchService.forceUpdateIndexField(index, type, field, value, documentIds);
-		if (response.contains("fail"))
-			return Response.status(Status.BAD_REQUEST).entity(response).build();
-		else
-			return Response.status(Status.OK).entity(response).build();
 	}
 
 	@GET
