@@ -174,6 +174,22 @@ public class ESController {
 		}
 	}
 
+	@GET
+	@Path(ApiConstants.BULKFETCH + "/{index}/{type}")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Fetch Documents in bulk", notes = "Returns Documents", response = MapDocument.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 500, message = "ERROR", response = String.class) })
+	public List<MapDocument> fetchInBulk(@PathParam("index") String index, @PathParam("type") String type,
+			@QueryParam("documentIds") List<String> documentIds) {
+		try {
+			return elasticSearchService.bulkFetch(index, type, documentIds);
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
 	@PUT
 	@Path(ApiConstants.DATA + "/{index}/{type}/{documentId}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -438,10 +454,10 @@ public class ESController {
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "Inappropriate Data", response = String.class) })
 
 	public Response getObservationInfo(@PathParam("index") String index, @PathParam("type") String type,
-			@QueryParam("id") String id,
-			@DefaultValue("true") @QueryParam("isMaxVotedRecoId") Boolean isMaxVotedRecoId) throws IOException {
+			@QueryParam("id") String id, @DefaultValue("true") @QueryParam("isMaxVotedRecoId") Boolean isMaxVotedRecoId)
+			throws IOException {
 		try {
-			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, id,isMaxVotedRecoId);
+			ObservationInfo info = elasticSearchService.getObservationRightPan(index, type, id, isMaxVotedRecoId);
 			return Response.status(Status.OK).entity(info).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
@@ -522,8 +538,7 @@ public class ESController {
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
 			@QueryParam("termsAggregationField") String termsAggregationField,
-			@QueryParam("geoFilterField") String geoShapeFilterField,
-			@ApiParam(name = "query") MapSearchQuery query) {
+			@QueryParam("geoFilterField") String geoShapeFilterField, @ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
 		MapBoundParams boundParams = searchParams.getMapBoundParams();
@@ -541,7 +556,7 @@ public class ESController {
 
 		try {
 			return elasticSearchService.search(index, type, query, geoAggregationField, geoAggegationPrecision,
-					onlyFilteredAggregation, termsAggregationField,geoShapeFilterField);
+					onlyFilteredAggregation, termsAggregationField, geoShapeFilterField);
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());

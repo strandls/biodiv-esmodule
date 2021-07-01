@@ -34,6 +34,7 @@ public interface ElasticSearchService {
 	
 	public List<UploadersInfo> uploaderInfo(String index,String userIds);
 	public List<IdentifiersInfo> identifierInfo(String index, String userIds);
+	public List<MapDocument>bulkFetch(String index, String type, List<String> documentIds);
 
 	/**
 	 * Creates a document in es

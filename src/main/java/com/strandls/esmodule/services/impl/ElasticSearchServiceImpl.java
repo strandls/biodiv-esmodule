@@ -23,6 +23,9 @@ import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -199,6 +202,28 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				response.isExists());
 
 		return new MapDocument(response.getSourceAsString());
+	}
+	
+	public List<MapDocument> bulkFetch(String index, String type, List<String> documentIds) {
+		List<MapDocument>responses=new ArrayList<>();
+		MultiGetRequest request = new MultiGetRequest();
+		for(String docId:documentIds) {
+			request.add(new MultiGetRequest.Item(index,docId)); 
+		}
+		MultiGetResponse response;
+		try {
+			response = client.mget(request, RequestOptions.DEFAULT);
+			for(MultiGetItemResponse i:response.getResponses()) {
+				responses.add(new MapDocument(i.getResponse().getSourceAsString()));
+			}
+			return responses;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		//MultiGetItemResponse item = response.getResponses();
+		return null;
+		
 	}
 
 	/*
