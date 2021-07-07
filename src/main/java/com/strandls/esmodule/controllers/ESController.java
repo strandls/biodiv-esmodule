@@ -520,6 +520,7 @@ public class ESController {
 			@QueryParam("geoAggegationPrecision") Integer geoAggegationPrecision,
 			@QueryParam("onlyFilteredAggregation") Boolean onlyFilteredAggregation,
 			@QueryParam("termsAggregationField") String termsAggregationField,
+			@QueryParam("geoFilterField") String geoShapeFilterField,
 			@ApiParam(name = "query") MapSearchQuery query) {
 
 		MapSearchParams searchParams = query.getSearchParams();
@@ -538,7 +539,7 @@ public class ESController {
 
 		try {
 			return elasticSearchService.search(index, type, query, geoAggregationField, geoAggegationPrecision,
-					onlyFilteredAggregation, termsAggregationField);
+					onlyFilteredAggregation, termsAggregationField,geoShapeFilterField);
 		} catch (IOException e) {
 			throw new WebApplicationException(
 					Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
