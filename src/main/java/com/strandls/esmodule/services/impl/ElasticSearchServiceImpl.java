@@ -1137,7 +1137,8 @@ public class ElasticSearchServiceImpl extends ElasticSearchQueryUtil implements 
 				String[] resRegex = field.split("\\.");
 				for (SearchHit hit : searchResponse.getHits().getHits()) {
 					Collection<Object> s = hit.getSourceAsMap().values();
-					results.add(s.toString().replaceAll("[\\[\\]{}]", "").replace(resRegex[1] + "=", ""));
+					results.add(
+							s.toString().replaceAll("[\\[\\]{}]", "").replace(resRegex[resRegex.length - 1] + "=", ""));
 				}
 
 			} catch (Exception e) {
